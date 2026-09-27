@@ -1,4 +1,9 @@
-button:disabled {
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+radio:disabled,
+checkbox:disabled {
   background-color: #d3d3d3;
   color: #858585;
   cursor: not-allowed;
