@@ -9,27 +9,30 @@ export interface Patient {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  gender: Gender;
+  gender: Gender | string;
   phone: string;
   email?: string;
   address?: string;
-  bloodGroup?: BloodGroup;
+  bloodGroup?: BloodGroup | string;
   emergencyContact?: string;
-  status: PatientStatus;
+  status: PatientStatus | string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreatePatientRequest {
+  _id?: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  gender: Gender;
+  gender: Gender | string;
   phone: string;
   email?: string;
   address?: string;
-  bloodGroup?: BloodGroup;
+  bloodGroup?: BloodGroup | string;
   emergencyContact?: string;
+  status: PatientStatus | string;
+
 }
 
 export interface PatientsResponse {
@@ -43,4 +46,17 @@ export interface PatientResponse {
   success: boolean;
   patient: Patient;
   message?: string;
+}
+
+export interface PatientFormErrors {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  status?: string;
 }
