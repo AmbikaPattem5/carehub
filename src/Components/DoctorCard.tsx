@@ -1,14 +1,16 @@
 import { User } from "lucide-react"
 import type { Doctor } from "../types/DoctorTypes"
 import AddDoctorModal from "../Components/AddDoctorModal"
+import AddAppointmentModal from "../Components/AddAppointmentModal"
 import { useState } from "react";
 function DoctorCard({ doctor, getDoctorList }: { doctor: Doctor, getDoctorList: () => void }) {
     const [editDoctor, setEditDoctor] = useState<Doctor | null>(null);
+    const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false)
     function handleEditProfile() {
         setEditDoctor(doctor);
     }
-    if (editDoctor) {
-        return <AddDoctorModal doctor={doctor} onClose={() => { setEditDoctor(null); if (getDoctorList) getDoctorList(); }} />
+    function handleBookSlot() {
+        setIsAppointmentModal(true);
     }
     return (
         <div className="g-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between h-full">
@@ -45,15 +47,15 @@ function DoctorCard({ doctor, getDoctorList }: { doctor: Doctor, getDoctorList: 
                     <span>{doctor.availableHours}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-auto pt-3 border-t border-slate-100">
-                    <button disabled={doctor.status === 'inactive'} className={`flex-1 text-xs font-semibold py-2 px-3 rounded-xl transition ${doctor.status === 'inactive'
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                    <button onClick={handleBookSlot} disabled={doctor.status === 'inactive'} className={`flex-1 text-xs font-semibold py-2 px-3 rounded-xl transition ${doctor.status === 'inactive'
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
                         }`}>Book Slot</button>
                     <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-xl transition cursor-pointer" onClick={handleEditProfile}>Edit Profile</button>
                 </div>
 
             </div>
-
+            {isAppointmentModal && <AddAppointmentModal doctor={doctor} onClose={() => setIsAppointmentModal(false)} />}
         </div>
     )
 }
