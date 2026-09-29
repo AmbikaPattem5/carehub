@@ -7,6 +7,7 @@ export interface AppointmentRequest {
     date: string
     time: string
     reason: string
+
 }
 
 export interface AppointmentResponse extends AppointmentRequest {
@@ -28,4 +29,16 @@ export interface AppointmentError {
     date: string
     time: string
     reason: string
+
+}
+export enum Status {
+    All = "all",
+    Confirmed = "confirmed",
+    Pending = "pending",
+    Completed = "completed"
+
+}
+export interface EditData {
+    status: Status;
+    notes: string
 }

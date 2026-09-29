@@ -6,14 +6,15 @@ import { useState, useEffect } from "react"
 import type { AppointmentRequest, AppointmentError, AppointmentResponse } from "../types/AppointmentTypes";
 import api from "../services/api";
 import toast from "react-hot-toast";
-
-function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => void, appointment: AppointmentResponse | null, doctor: Doctor | null }) {
+import { Status } from '../types/AppointmentTypes'
+import type { EditData } from "../types/AppointmentTypes"
+function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onClose: () => void, appointment: AppointmentResponse | null, doctor: Doctor | null, reschedule: string }) {
     const formInitialValues: AppointmentRequest = {
         patientId: appointment?.patientId,
         doctorId: appointment?.doctorId || doctor?.doctorId || "",
         date: appointment?.date || "",
         time: appointment?.time || "",
-        reason: appointment?.reason || ""
+        reason: appointment?.reason || "",
 
     }
     const isEdit = appointment?._id ? true : false
@@ -23,12 +24,20 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
         date: "",
         time: "",
         reason: "",
+
     }
+    const updateData: EditData = {
+        status: appointment?.status || "",
+        notes: ""
+    }
+
     const [formData, setFormData] = useState<AppointmentRequest>(formInitialValues)
     const [errors, setErrors] = useState<AppointmentError>(errorInitialValues)
+    const [editData, setEditData] = useState<EditData>(updateData)
     const [patients, setPatients] = useState<Patient[]>([])
     const [doctors, setDoctors] = useState<Doctor[]>([])
     const [availableSlots, setAvailableSlots] = useState<string[]>([])
+    const [fee, setFee] = useState<number | null>(null)
     useEffect(() => {
         async function loadData() {
             try {
@@ -75,12 +84,17 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
         }
 
     }, [formData.date, formData.doctorId])
-    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>) {
+    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
         const { name, value } = e.target
         setFormData({
             ...formData,
             [name]: value
         })
+    }
+    function handlaUpdateChange(e: React.ChangeEvent<HTMLTextAreaElement | HTMLSelectElement>) {
+        const { name, value } = e.target
+        setEditData({ ...editData, [name]: value })
+
     }
     function handleSlotChange(value: string) {
         setFormData({
@@ -114,7 +128,7 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
         if (Object.values(errors).some((error) => error !== "")) {
             return;
         }
-        if (isEdit) {
+        if (isEdit && reschedule === "reschedule") {
             const payLoad = {
                 date: formData.date,
                 time: formData.time
@@ -132,6 +146,20 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
                 toast.error(error?.response?.data?.message || "Failed to update appointment")
             }
         }
+        else if (isEdit && reschedule === "edit") {
+            try {
+                const response = await api.patch(`appointments/${appointment._id}`, editData)
+                console.log("update date", response.data)
+                if (response && response.data.success) {
+
+                    toast.success("Appointment Updated Successfully")
+                }
+            }
+            catch (err) {
+                toast.error(err?.response?.data?.message || "Failed to update appointment")
+            }
+
+        }
         else {
             try {
                 const response = await api.post('/appointments', formData);
@@ -144,7 +172,12 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
             }
         }
     }
-
+    function getDoctorFee(doctorId) {
+        let doctorData = doctors.find((doctor) => doctor.doctorId === doctorId);
+        let fees = doctorData.consultationFee
+        console.log(fees);
+        setFee(fees)
+    }
 
 
     return (
@@ -189,8 +222,8 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
                             </select>
                         </div>
                         <div className="flex flex-col">
-                            <label>Doctor</label>
-                            <select name="doctorId" value={formData.doctorId} disabled={isEdit} onChange={handleChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black" >
+                            <label>Doctor -Rs{fee} </label>
+                            <select name="doctorId" value={formData.doctorId} disabled={isEdit} onChange={(e) => { handleChange(e); getDoctorFee(e.target.value); }} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black" >
                                 <option value="">Select Doctor</option>
                                 {Object.keys(doctors).length > 0 && doctors.map((doctor) => (
                                     <option key={doctor._id} value={doctor.doctorId}>{doctor.doctorId} - {doctor.name}</option>
@@ -213,7 +246,28 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
                         </div>
                         <div className="flex flex-col w-full">
                             <label>Reason</label>
-                            <input type="text" name="reason" disabled={isEdit} placeholder="Reason" value={formData.reason} onChange={handleChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black" />
+                            <textarea name="reason" disabled={isEdit} placeholder="Reason" value={formData.reason} onChange={handleChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black">
+                            </textarea>
+                        </div>
+                        <div>
+                            {isEdit && reschedule === "edit" &&
+                                <div>
+                                    <div>
+                                        <label>Status</label>
+                                        <select name="status" value={editData.status} onChange={handlaUpdateChange} className="w-full border border-slate-300 rounded-lg px-3 py-2 hover:bg-slate-300 text-sm text-black" >
+                                            {Object.entries(Status).map(([key, value]) => {
+                                                return (
+                                                    <option key={value} value={value}>{key}</option>
+                                                )
+                                            })}
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label>Notes </label>
+                                        <textarea placeholder="notes" name="notes" value={editData.notes} onChange={handlaUpdateChange} className="border border=slate-300 rounded-lg px-3 py-2 hover:bg-slate-300 text-sm text-black" >
+                                        </textarea>
+                                    </div>
+                                </div>}
                         </div>
 
                     </div>
@@ -223,7 +277,7 @@ function AddAppointmentModal({ onClose, appointment, doctor }: { onClose: () => 
                             onClick={onClose}
                             className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition cursor-pointer">Cancel</button>
                         <button type="button" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center"
-                        >{isEdit ? "Update" : "Add"} Appointment</button>
+                        >{isEdit && reschedule === "reshedule" ? "Reshedule" : (isEdit ? "Update" : "Add")} Appointment</button>
                     </div>
                 </form>
             </div >

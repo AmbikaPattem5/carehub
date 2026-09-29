@@ -4,6 +4,7 @@ import type { AppointmentResponse } from "../types/AppointmentTypes";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import type { Doctor } from "../types/DoctorTypes";
+import { Status } from '../types/AppointmentTypes'
 import { X } from "lucide-react"
 function Appointments() {
     const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false)
@@ -15,13 +16,20 @@ function Appointments() {
     const [doctors, setDoctors] = useState<Doctor[]>([])
     const [checkInStatus, setCheckInStatus] = useState<string | null>(null)
     const [cancelAppointment, setCancelAppointment] = useState<AppointmentResponse | null>(null)
-    enum Status {
-        All = "all",
-        Confirmed = "confirmed",
-        Pending = "pending",
-        Completed = "completed"
+    const [reshedule, setReshedule] = useState<string | null>("reshedule")
 
-    }
+    // const editData ={
+    //     status : "",
+    //     notes : ""
+    // }
+
+    // enum Status {
+    //     All = "all",
+    //     Confirmed = "confirmed",
+    //     Pending = "pending",
+    //     Completed = "completed"
+
+    // }
     useEffect(() => {
         getDoctors()
     }, [])
@@ -89,6 +97,8 @@ function Appointments() {
     useEffect(() => {
         getAppointmentList()
     }, [status, date])
+
+
     function filterDoctorId(id: string) {
         const updatedAppointmentList = initialAppointmentList.filter((appointment) => (appointment.doctorId === id));
         setAppointmentList(updatedAppointmentList)
@@ -160,8 +170,10 @@ function Appointments() {
                                             <td>
                                                 <div className="flex gap-2 justify-center items-center">
                                                     <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => handleCheckIn(appointment._id)}>Check In</button>
-                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => setRescheduleAppointment(appointment)}>Reschedule</button>
+                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => { setRescheduleAppointment(appointment); setReshedule("reschedule") }}>Reschedule</button>
+                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => { setRescheduleAppointment(appointment); setReshedule("edit") }}>Edit</button>
                                                     <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => handleCancelAppointment(appointment._id)}><X size={16} /></button>
+
 
                                                 </div>
                                             </td>
@@ -178,8 +190,9 @@ function Appointments() {
 
                     {rescheduleAppointment && (
                         <AddAppointmentModal
+                            doctor={null}
                             onClose={() => { setRescheduleAppointment(null); getAppointmentList(); }}
-                            appointment={rescheduleAppointment}
+                            appointment={rescheduleAppointment} reschedule={reshedule}
                         />
                     )}
                 </div>
