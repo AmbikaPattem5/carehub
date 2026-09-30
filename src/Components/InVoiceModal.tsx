@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import type { Patient } from "../types/PatientTypes";
 import type { AppointmentResponse } from "../types/AppointmentTypes"
-import type { BillingRequest, Item, BillingError } from "../types/BillingTypes"
+import type { BillingRequest, Item, BillingError, ItemsError } from "../types/BillingTypes"
 import api from "../services/api";
 import toast from "react-hot-toast";
 
-function InVoiceModal({ onClose }: { onCLose: () => void }) {
+function InVoiceModal({ onClose }: { onClose: () => void }) {
     const initialFormData: BillingRequest = {
         patientId: "",
         appointmentId: "",
@@ -29,20 +29,17 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
         unitPrice: null,
         amount: null,
     }
+
     const [patientList, setPatientList] = useState<Patient[]>([]);
     const [appointmentList, setAppointmentList] = useState<AppointmentResponse[]>([])
     const [formData, setFormData] = useState<BillingRequest>(initialFormData)
     const [linkedAppointments, setLinkedAppointments] = useState<AppointmentResponse[]>([])
-    const [description, setDescription] = useState<string>("");
-    const [quantity, setquantity] = useState<number | null>(null);
-    const [unitPrice, setUnitPrice] = useState<number | null>(null)
     const [totalItems, setTotalItems] = useState<Item[]>([])
     const [billingData, setBillingData] = useState<Item>(initialBillingData)
-    let discount = 50;
-    let tax = 0;
+
     function handleChange(e) {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: [value] })
+        setFormData({ ...formData, [name]: value })
     }
     useEffect(() => {
         async function loadData() {
@@ -81,6 +78,10 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
     }
     //console.log(billingData)
     function handleAdd() {
+        if (!billingData.description || !billingData.quantity || !billingData.unitPrice) {
+            toast.error("values are required");
+            return;
+        }
         const qty = Number(billingData.quantity) || 0;
         const unitPrice = Number(billingData.unitPrice) || 0;
         const itemAmount = qty * unitPrice;
@@ -98,15 +99,28 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
     totalItems.forEach((item) => {
         itemsSubAmount = itemsSubAmount + item.amount
     })
+    const discountAmount = Number(formData.discount || 0);
+    const taxAmount = Number(formData.taxPercent || 0);
+    const discountValue = itemsSubAmount - discountAmount;
+    const taxAmountValue = (discountValue * taxAmount) / 100
+    const totalAmount = discountValue + taxAmountValue;
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+        if (!formData.patientId || !formData.appointmentId) {
+            toast.error("Patient and Appointment are required")
+            return;
+        }
+        if (totalItems.length === 0) {
+            toast.error("Please add items")
+            return;
+        }
         try {
             const billingRequest: BillingRequest = {
                 patientId: formData.patientId,
                 appointmentId: formData.appointmentId,
                 items: totalItems,
-                discount: discount,
-                taxPercent: tax,
+                discount: Number(formData.discount),
+                taxPercent: Number(formData.taxPercent),
                 notes: formData.notes
             }
             const response = await api.post('/bills', billingRequest)
@@ -132,6 +146,7 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                             <div>
                                 <label>Patient</label>
                                 <select name="patientId" value={formData.patientId} onChange={(e) => { handleChange(e); getAppointment(e.target.value) }}>
+                                    <option value="">Select Patient</option>
                                     {
                                         patientList.map((patient) => {
                                             return (
@@ -145,10 +160,11 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                             <div>
                                 <label>Linked Appointment</label>
                                 <select name="appointmentId" value={formData.appointmentId} onChange={handleChange}>
+                                    <option value="">Select Appointment</option>
                                     {
                                         linkedAppointments.map((appointment) => {
                                             return (
-                                                <option key={appointment._id} value={appointment.patientId}>{appointment.appointmentId} - Dr.{appointment.doctorName}</option>
+                                                <option key={appointment._id} value={appointment.appointmentId}>{appointment.appointmentId} - Dr.{appointment.doctorName}</option>
                                             )
                                         })
                                     }
@@ -166,9 +182,9 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {totalItems.map((item) => {
+                                    {totalItems.map((item, index) => {
                                         return (
-                                            <tr className="border-b border-gray-300">
+                                            <tr key={index} className="border-b border-gray-300">
                                                 <td >{item.description}</td>
                                                 <td>{item.quantity}</td>
                                                 <td>{item.unitPrice}</td>
@@ -184,15 +200,17 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                         <div className="flex flex-row">
                             <div>
                                 <label>Item Description</label>
+
                                 <input type="text" name="description" value={billingData.description} onChange={handleBilling} className="border border-gray-300 rounded-2xl" />
+
                             </div>
                             <div>
                                 <label>Quantity</label>
-                                <input type="number" name="quantity" value={billingData.quantity ?? ""} onChange={handleBilling} className="border border-gray-300 rounded-2xl" />
+                                <input type="number" name="quantity" value={billingData.quantity ?? ""} onChange={handleBilling} className="border border-gray-300 rounded-2xl [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                             </div>
                             <div>
                                 <label>Unit Price</label>
-                                <input type="number" name="unitPrice" value={billingData.unitPrice ?? ""} onChange={handleBilling} className="border border-gray-300 rounded-2xl" />
+                                <input type="number" name="unitPrice" value={billingData.unitPrice ?? ""} onChange={handleBilling} className="border border-gray-300 rounded-2xl [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                             </div>
 
 
@@ -204,11 +222,13 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                             <div className="flex flex-col">
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Discount</label>
-                                    <input type="number" value="50" className="border border-gray-300 rounded-xl m-2" />
+                                    <input type="number" name="discount" value={formData.discount ?? ""} onChange={handleChange} className="border border-gray-300 rounded-xl m-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium text-gray-700">Tax/GST(%)</label>
-                                    <input type="number" value="0" className="border border-gray-300 rounded-xl m-2" />
+                                    <input type="number" name="taxPercent" value={formData.taxPercent ?? ""} onChange={handleChange} className="border border-gray-300 rounded-xl m-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+
                                 </div>
                                 <div className="flex gap-2">
                                     <label className="text-sm font-medium text-gray-700">Subtotal</label>
@@ -216,7 +236,7 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                                 </div>
                                 <div className="flex gap-2">
                                     <label className=" text-sm font-medium text-gray-700">Final Total</label>
-                                    <span className="text-center text-lg font-medium w-full justify-end">₹{itemsSubAmount && itemsSubAmount - discount + tax}</span>
+                                    <span className="text-center text-lg font-medium w-full justify-end">₹{totalAmount > 0 ? totalAmount : 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -225,8 +245,8 @@ function InVoiceModal({ onClose }: { onCLose: () => void }) {
                             <textarea name="notes" value={formData.notes} className="border border-gray-300 rounded-xl" onChange={handleChange}></textarea>
                         </div>
                         <div className="flex justify-end">
-                            <button onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
-                            <button onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">Generate Invoice</button>
+                            <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
+                            <button type="submit" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">Generate Invoice</button>
                         </div>
                     </form>
                 </div>
