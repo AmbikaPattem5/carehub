@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import type { Patient } from "../types/PatientTypes";
 import type { AppointmentResponse } from "../types/AppointmentTypes"
-import type { BillingRequest, Item, BillingError, ItemsError } from "../types/BillingTypes"
+import type { BillingRequest, Item, BillingError, ItemsError, Billing } from "../types/BillingTypes"
 import api from "../services/api";
 import toast from "react-hot-toast";
+import { X } from "lucide-react"
 
-function InVoiceModal({ onClose }: { onClose: () => void }) {
+function InVoiceModal({ onClose, billing }: { onClose: () => void, billing: Billing }) {
     const initialFormData: BillingRequest = {
-        patientId: "",
-        appointmentId: "",
-        items: [],
-        discount: null,
-        taxPercent: null,
-        notes: ""
+        patientId: billing?.patientId ?? "",
+        appointmentId: billing?.appointmentId ?? "",
+        items: billing?.items ?? [],
+        discount: billing?.discount ?? null,
+        taxPercent: billing?.taxPercent ?? null,
+        notes: billing?.notes ?? "",
+        doctorName: billing?.doctorName ?? ""
     }
     const initialFormErrors: BillingError = {
         patientId: "",
@@ -36,6 +38,8 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
     const [linkedAppointments, setLinkedAppointments] = useState<AppointmentResponse[]>([])
     const [totalItems, setTotalItems] = useState<Item[]>([])
     const [billingData, setBillingData] = useState<Item>(initialBillingData)
+    const isEdit: Boolean = billing?.paymentStatus === "pending" ? true : false
+
 
     function handleChange(e) {
         const { name, value } = e.target;
@@ -65,12 +69,21 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
         }
         loadData();
     }, [])
-    function getAppointment(patientId) {
-        const filteredAppointments = appointmentList.filter((appointment) => appointment.patientId === patientId);
-        console.log(filteredAppointments)
-        setLinkedAppointments(filteredAppointments);
 
-    }
+    useEffect(() => {
+        if (formData.patientId && appointmentList.length > 0) {
+            const filtered = appointmentList.filter(
+                (appointment) => appointment.patientId === formData.patientId
+            );
+            setLinkedAppointments(filtered);
+        }
+    }, [formData.patientId, appointmentList]);
+
+    useEffect(() => {
+        if (isEdit) {
+            setTotalItems(billing?.items)
+        }
+    }, [])
     function handleBilling(e) {
         const { name, value } = e.target;
         setBillingData({ ...billingData, [name]: value })
@@ -114,24 +127,50 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
             toast.error("Please add items")
             return;
         }
-        try {
-            const billingRequest: BillingRequest = {
-                patientId: formData.patientId,
-                appointmentId: formData.appointmentId,
-                items: totalItems,
-                discount: Number(formData.discount),
-                taxPercent: Number(formData.taxPercent),
-                notes: formData.notes
+        if (isEdit) {
+            try {
+                const billingRequest: BillingRequest = {
+                    patientId: formData.patientId,
+                    appointmentId: formData.appointmentId,
+                    items: totalItems,
+                    discount: Number(formData.discount),
+                    taxPercent: Number(formData.taxPercent),
+                    notes: formData.notes
+                }
+                const response = await api.patch(`/bills/${billing._id}`, billingRequest)
+                if (response && response.data.success) {
+                    toast.success(response.data.message)
+                    onClose()
+                }
             }
-            const response = await api.post('/bills', billingRequest)
-            if (response && response.data.success) {
-                toast.success(response.data.message)
-                onClose()
+            catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to edit invoice")
             }
         }
-        catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to create invoice")
+        else {
+            try {
+                const billingRequest: BillingRequest = {
+                    patientId: formData.patientId,
+                    appointmentId: formData.appointmentId,
+                    items: totalItems,
+                    discount: Number(formData.discount),
+                    taxPercent: Number(formData.taxPercent),
+                    notes: formData.notes
+                }
+                const response = await api.post('/bills', billingRequest)
+                if (response && response.data.success) {
+                    toast.success(response.data.message)
+                    onClose()
+                }
+            }
+            catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to create invoice")
+            }
         }
+    }
+    function handleDelete(id) {
+        const updatedFilterList = totalItems.filter((item, index) => index != id);
+        setTotalItems(updatedFilterList);
     }
     console.log("totalItem", totalItems)
     return (
@@ -139,13 +178,13 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
             <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 my-auto overflow-hidden flex flex-col max-h-[92vh] transition-all animate-in zoom-in-95 duration-200">
                 <div className="flex flex-col px-6 sm:px-8 py-5 border-b border-slate-100 bg-slate-50/50">
                     <div >
-                        <h1 className="font-bold">Create New Voice</h1>
+                        <h1 className="font-bold">{isEdit ? "Edit Invoice" : "Create New Invoice"}</h1>
                     </div>
                     <form>
                         <div className="flex flex-row">
                             <div>
                                 <label>Patient</label>
-                                <select name="patientId" value={formData.patientId} onChange={(e) => { handleChange(e); getAppointment(e.target.value) }}>
+                                <select name="patientId" value={formData.patientId} onChange={(e) => { handleChange(e); }}>
                                     <option value="">Select Patient</option>
                                     {
                                         patientList.map((patient) => {
@@ -179,6 +218,7 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
                                         <th>Qty</th>
                                         <th>Unit Price(₹)</th>
                                         <th>Total Amount(₹)</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -189,6 +229,7 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
                                                 <td>{item.quantity}</td>
                                                 <td>{item.unitPrice}</td>
                                                 <td>{item.amount}</td>
+                                                <td><button type="button" className="bg-gray-200 hover:bg-gray-400 " onClick={() => handleDelete(index)}><X size={20} /></button></td>
                                             </tr>
                                         )
 
@@ -246,7 +287,7 @@ function InVoiceModal({ onClose }: { onClose: () => void }) {
                         </div>
                         <div className="flex justify-end">
                             <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
-                            <button type="submit" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">Generate Invoice</button>
+                            <button type="submit" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">{isEdit ? "Edit Invoice" : "Generate Invoice"}</button>
                         </div>
                     </form>
                 </div>

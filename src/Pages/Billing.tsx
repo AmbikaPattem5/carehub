@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import AddPaymentModal from "../Components/AddPaymentModal"
 import { Search } from "lucide-react"
 import type { BillingSearch } from "../types/BillingTypes"
+import AddDownloadReceiptModal from "../Components/AddDownloadReceiptModal"
 function Billing() {
     const initialFormData: BillingSearch = {
         statusData: "",
@@ -19,16 +20,28 @@ function Billing() {
     const [isSelect, setIsSelect] = useState<string>("all")
     const [formData, setFormData] = useState<BillingSearch>(initialFormData);
     const [statistics, setStatistics] = useState<StatisticsResponse | undefined>(undefined)
+    const [isDownloadReceiptModalOpen, setIsDownloadReceiptModalOpen] = useState<boolean>(false)
+    const [editBilling, setEditBilling] = useState<Billing | null>(null)
     enum PaymentStatus {
         all = "All",
         paid = "Paid",
         pending = "Pending",
         cancelled = "Cancelled"
     }
+    function handleEdit(billing: Billing) {
+        setIsBilling(true);
+        setEditBilling(billing)
+    }
 
     function handlePayment(billing: Billing) {
-        setIsPayment(true);
-        setBilling(billing)
+        if (billing.paymentStatus === "pending") {
+            setIsPayment(true);
+            setBilling(billing)
+        }
+        else if (billing.paymentStatus === "paid") {
+            setIsDownloadReceiptModalOpen(true);
+            setBilling(billing)
+        }
     }
     function handleStatus(key, value) {
         setIsSelect(key);
@@ -79,30 +92,29 @@ function Billing() {
                         </div>
                         <div className="space-y-1 flex items-end">
                             <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl  text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => setIsBilling(true)}>Create Invoice</button>
-                            {isBilling && <InVoiceModal onClose={() => { setIsBilling(false); loadData() }} billing={null} />}
                         </div>
                     </div>
                     <div className="flex flex-row gap-2">
                         <div className="flex-1 border border-gray-300 rounded-xl">
                             <h4>Total Revenue</h4>
-                            <h1>{statistics.totalRevenue}</h1>
+                            <h1>{statistics?.totalRevenue}</h1>
                             <p>Trend</p>
                         </div>
                         <div className="flex-1 border border-gray-300 rounded-xl">
                             <h4>Pending Collections</h4>
-                            <h1>{statistics.pendingAmount}</h1>
-                            <p>{statistics.pendingCount} pending invoices</p>
+                            <h1>{statistics?.pendingAmount}</h1>
+                            <p>{statistics?.pendingCount} pending invoices</p>
 
                         </div>
 
                         <div className="flex-1 border border-gray-300 rounded-xl">
                             <h4>Today's Collections</h4>
-                            <h1>{statistics.pendingAmount}</h1>
+                            <h1>{statistics?.pendingAmount}</h1>
                             <p>cash,card & UPI</p>
                         </div>
                         <div className="flex-1 border border-gray-300 rounded-xl">
                             <h4>Invoices Generated</h4>
-                            <h1>{statistics.totalInvoicesCount}</h1>
+                            <h1>{statistics?.totalInvoicesCount}</h1>
                             <p>today</p>
                         </div>
                     </div>
@@ -158,7 +170,14 @@ function Billing() {
                                                 <td className={`text-center ${billing.paymentStatus === "paid" ? "bg-green-300 text-white text-center rounded-xl" : "bg-red-300 text-white text-center rounded-xl"}`}>{billing.paymentStatus}</td>
                                                 <td>
                                                     <div className="flex gap-2 justify-center items-center">
-                                                        <button type="button" onClick={() => handlePayment(billing)} className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer">{billing.paymentStatus == "pending" ? "Collect Payment" : "Download Receipt"}</button>
+                                                        {/* <button type="button" onClick={() => handlePayment(billing)} className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer">{billing.paymentStatus == "pending" ? "Collect Payment" : "Download Receipt"}</button> */}
+                                                        {billing.paymentStatus == "pending" ?
+                                                            <div>
+                                                                <button onClick={() => handleEdit(billing)} className="border border-gray-300 rounded-xl p-1 bg-blue-200 hover:bg-blue-400 cursor-pointer">Edit</button>
+                                                                <button onClick={() => handlePayment(billing)} className="border border-gray-300 rounded-xl p-1 bg-emerald-200 hover:bg-emerald-400 cursor-pointer">Collection Payment</button>
+                                                            </div> :
+                                                            <button onClick={() => handlePayment(billing)} className="border border-gray-300 rounded-xl p-1 bg-emerald-200 hover:bg-emerald-400 cursor-pointer">Download Receipt</button>
+                                                        }
 
 
                                                     </div>
@@ -180,6 +199,13 @@ function Billing() {
                                 billing={billing}
                             />
                         )}
+                        {isDownloadReceiptModalOpen && (
+                            <AddDownloadReceiptModal onClose={() => { setIsDownloadReceiptModalOpen(false) }}
+                                billing={billing}
+
+                            />
+                        )}
+                        {isBilling && <InVoiceModal onClose={() => { setIsBilling(false); loadData() }} billing={editBilling} />}
                     </div>
                 </div>
             </div>

@@ -11,6 +11,7 @@ export interface BillingRequest {
     discount: number;
     taxPercent: number;
     notes: string;
+    doctorName?: string
 }
 export type PaymentStatus = 'pending' | 'paid' | 'partially-paid' | 'cancelled';
 export type PaymentMethod = 'cash' | 'card' | 'upi' | 'insurance' | 'other' | '';
