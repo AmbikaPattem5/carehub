@@ -4,7 +4,7 @@ import api from "../services/api"
 import type { DoctorStats, AdminStats, Receptionist } from "../types/DashboardTypes"
 import toast from "react-hot-toast"
 import type { AppointmentResponse } from "../types/AppointmentTypes";
-
+import AddPrescriptionModal from "../Components/AddPrescriptionModal"
 
 function Dashboard() {
     const [doctorStats, setDoctorStats] = useState<DoctorStats | undefined>(undefined)
@@ -12,6 +12,9 @@ function Dashboard() {
     const [adminStats, setAdminStats] = useState<AdminStats | undefined>(undefined)
     const [appointmentList, setAppointmentList] = useState<AppointmentResponse[]>([])
     const { role, user } = useAuth();
+    const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState<Boolean>(false)
+    const [appointmentId, setAppointmentId] = useState<string>("")
+    const [patientId, setPatientId] = useState<string>("")
 
     console.log(role)
     useEffect(() => {
@@ -64,7 +67,12 @@ function Dashboard() {
         }
         getAppointments()
     }, [])
-    function handleConsultation(id) { }
+    function handleConsultation(patientId, appointmentId) {
+        setIsPrescriptionModalOpen(true);
+        setAppointmentId(appointmentId);
+        setPatientId(patientId)
+
+    }
     return (
         <div className="flex flex-col gap-4">
             <div>
@@ -209,7 +217,7 @@ function Dashboard() {
                                         <td>
                                             <div className="flex gap-2 justify-center items-center">
                                                 <div>
-                                                    <button onClick={() => handleConsultation(appointment._id)} className="border border-gray-300 rounded-xl p-1 bg-emerald-200 hover:bg-emerald-400 cursor-pointer">Start Consultation</button>
+                                                    <button onClick={() => handleConsultation(appointment.patientId, appointment.appointmentId)} className="border border-gray-300 rounded-xl p-1 bg-emerald-200 hover:bg-emerald-400 cursor-pointer">Start Consultation</button>
                                                 </div>
 
 
@@ -225,6 +233,7 @@ function Dashboard() {
                         }
                     </tbody>
                 </table>
+                {isPrescriptionModalOpen && <AddPrescriptionModal onClose={() => setIsPrescriptionModalOpen(false)} appointmentId={appointmentId} patientId={patientId} />}
             </div>
         </div>
     )
