@@ -5,6 +5,8 @@ import type { DoctorStats, AdminStats, Receptionist } from "../types/DashboardTy
 import toast from "react-hot-toast"
 import type { AppointmentResponse } from "../types/AppointmentTypes";
 import AddPrescriptionModal from "../Components/AddPrescriptionModal"
+import PrescriptionPrint from "../Components/PrescriptionPrint"
+
 
 function Dashboard() {
     const [doctorStats, setDoctorStats] = useState<DoctorStats | undefined>(undefined)
@@ -15,7 +17,8 @@ function Dashboard() {
     const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState<Boolean>(false)
     const [appointmentId, setAppointmentId] = useState<string>("")
     const [patientId, setPatientId] = useState<string>("")
-
+    const [isPrecriptionOpen, setIsPrescriptionOpen] = useState<Boolean>(false)
+    const [prescriptionId, setPrescriptionId] = useState<string>("")
     console.log(role)
     useEffect(() => {
         async function loadData() {
@@ -71,6 +74,16 @@ function Dashboard() {
         setIsPrescriptionModalOpen(true);
         setAppointmentId(appointmentId);
         setPatientId(patientId)
+
+    }
+    function handleClose(isPrescriptionPrint, prescriptionId = undefined) {
+        setIsPrescriptionModalOpen(false);
+        if (isPrescriptionPrint) {
+
+            setIsPrescriptionOpen(true);
+            setPrescriptionId(prescriptionId)
+
+        }
 
     }
     return (
@@ -233,7 +246,8 @@ function Dashboard() {
                         }
                     </tbody>
                 </table>
-                {isPrescriptionModalOpen && <AddPrescriptionModal onClose={() => setIsPrescriptionModalOpen(false)} appointmentId={appointmentId} patientId={patientId} />}
+                {isPrescriptionModalOpen && <AddPrescriptionModal onClose={handleClose} appointmentId={appointmentId} patientId={patientId} />}
+                {isPrecriptionOpen && <PrescriptionPrint onClose={() => setIsPrescriptionOpen(false)} patientId={patientId} prescriptionId={prescriptionId} />}
             </div>
         </div>
     )

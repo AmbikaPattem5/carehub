@@ -20,5 +20,7 @@ export interface PrescriptionMedicines {
     consultationId: string,
     patientId: string,
     medicines: Medicines[];
+    doctorName: string;
+    prescriptionId: string
 
 }

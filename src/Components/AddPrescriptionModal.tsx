@@ -4,7 +4,7 @@ import type { Patient } from "../types/PatientTypes"
 import { useState, useEffect, useRef } from "react"
 import type { PrescriptionNotes, Medicines, PrescriptionMedicines } from "../types/PrescriptionTypes"
 import toast from "react-hot-toast"
-function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: () => void, appointmentId: string, patientId: string }) {
+function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: (isPrint: boolean, presId: string) => void, appointmentId: string, patientId: string }) {
     const SYMPTOM_OPTIONS = [
         "Fever",
         "Sore Throat",
@@ -47,6 +47,12 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
 
 
     const dropdownRef = useRef<HTMLDivElement>(null);
+    function validateSymptomsFormData() {
+        if (formData.symptoms.length === 0 || formData.diagnosis === "" || formData.doctorNotes === "") {
+            toast.error("Fill the required fields");
+            return;
+        }
+    }
     function handleMedicineItem(e) {
         const { name, value } = e.target;
         setMedicineItem({ ...medicineItem, [name]: value })
@@ -67,6 +73,10 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
         }
         setMedicineData([...medicineData, newItem])
         setMedicineItem(initialMedicineData)
+    }
+    function handleDelete(id) {
+        const updatedFilterList = medicineData.filter((item, index) => index != id);
+        setMedicineData(updatedFilterList);
     }
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -128,7 +138,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
     }
     async function handleSubmit() {
         let consId: string = "";
-
+        validateSymptomsFormData()
         try {
             const response = await api.post("/consultations", formData);
             if (response && response.data && response.data.success) {
@@ -147,18 +157,28 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
             medicines: medicineData,
 
         }
-        try {
-            const response = await api.post("/prescriptions", prescriptionNotes);
-            if (response && response.data && response.data.success) {
-                consId = response.data.consultation.consultationId;
+        if (consId === "" && medicineData.length === 0) {
+            return;
+        }
+        else if (medicineData.length === 0) {
+            return;
+        }
+        else {
+            let prescriptionId = null;
+            try {
+                const response = await api.post("/prescriptions", prescriptionNotes);
+                if (response && response.data && response.data.success) {
+                    prescriptionId = response.data.prescriptionId
+                }
+                console.log(response.data)
             }
-            console.log(response.data)
+            catch (err) {
+                toast.error(err?.response?.data?.message)
+            }
+            onClose(true, prescriptionId)
         }
-        catch (err) {
-            toast.error(err?.response?.data?.message)
-        }
-
     }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
             <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-100 my-auto overflow-visible flex flex-col max-h-[92vh] transition-all animate-in zoom-in-95 duration-200" >
@@ -173,11 +193,11 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                     </div>
                     <button
                         type="button"
-                        onClick={onClose}
+                        onClick={() => onClose(false, undefined)}
                         className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition cursor-pointer"
                         aria-label="Close dialog"
                     >
-                        <X size={20} className="bg-white" onClick={onClose} />
+                        <X size={20} className="bg-white" onClick={() => onClose(false, undefined)} />
                     </button>
                 </div>
                 <div className="flex flex-row bg-blue-100">
@@ -255,11 +275,11 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                         </div>
                         <div>
                             <label>Clinical Diagnosis</label>
-                            <input type="text" onChange={handleChange} name="diagnosis" value={formData.diagnosis} />
+                            <input type="text" onChange={handleChange} name="diagnosis" value={formData.diagnosis} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black" />
                         </div>
                         <div>
                             <label>Clinical Doctor Notes</label>
-                            <textarea onChange={handleChange} name="doctorNotes" value={formData.doctorNotes}>
+                            <textarea onChange={handleChange} name="doctorNotes" value={formData.doctorNotes} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black">
                             </textarea>
                         </div>
                     </form>
@@ -325,7 +345,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                 <div className="flex flex-row justify-between gap-3">
                     <div>Follow Up Date</div>
                     <div className="flex flex-row gap-2">
-                        <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
+                        <button type="button" onClick={() => onClose(false, undefined)} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
                         <button type="button" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">Issue and Print Prescription</button>
                     </div>
                 </div>
