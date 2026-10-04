@@ -284,14 +284,14 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-semibold text-slate-700">Phone Number <span className="text-rose-500 font-bold">*</span></label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         name="phone"
                                         placeholder="+91 98450 12345"
                                         value={formData.phone}
                                         onChange={handleChange}
                                         disabled={isEdit}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"'}`}
                                     />
                                     {errors.phone && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
