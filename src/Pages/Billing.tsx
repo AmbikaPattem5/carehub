@@ -79,9 +79,6 @@ function Billing() {
 
     return (
         <div>
-            Billing
-
-
 
             <div className="w-full h-full mx-auto bg-gray-200 border-b border-gray-300">
                 <div className="w-full mx-auto py-8 px-6 flex flex-col gap-4">

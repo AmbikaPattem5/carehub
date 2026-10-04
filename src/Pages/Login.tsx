@@ -30,7 +30,7 @@ function Login() {
             const response = await api.post("auth/login", form)
             console.log(response.data)
             if (response && response.data.success) {
-                login(response.data.token, response.data.user.name)
+                login(response.data.token, response.data.user.name, response.data.user.role)
                 toast.success("Login successful")
                 navigate('/')
             }

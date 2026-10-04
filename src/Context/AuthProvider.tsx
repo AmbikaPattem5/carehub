@@ -3,11 +3,14 @@ import { AuthContextData } from "./AuthContext"
 function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setToken] = useState<string | null>(localStorage.getItem("token"))
     const [user, setUser] = useState<string | null>(localStorage.getItem("user"))
-    function login(token: string, user: string) {
+    const [role, setRole] = useState<string | null>(localStorage.getItem("role"))
+    function login(token: string, user: string, role: string) {
         localStorage.setItem("token", token)
         localStorage.setItem("user", user)
+        localStorage.setItem("role", role)
         setToken(token)
         setUser(user)
+        setRole(role)
     }
     function logout() {
         localStorage.removeItem("token")
@@ -16,7 +19,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
     }
     return (
-        <AuthContextData.Provider value={{ token, user, login, logout }}>
+        <AuthContextData.Provider value={{ token, user, login, logout, role }}>
             {children}
         </AuthContextData.Provider>
     )
