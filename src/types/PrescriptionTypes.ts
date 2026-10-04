@@ -22,5 +22,23 @@ export interface PrescriptionMedicines {
     medicines: Medicines[];
     doctorName: string;
     prescriptionId: string
+    createdAt: string
 
+}
+export interface ConsultationType {
+    _id: string,
+    consultationId: string,
+    appointment: string,
+    appointmentId: string,
+    patient: string,
+    patientId: string,
+    patientName: string,
+    doctor: string,
+    doctorId: string,
+    doctorName: string,
+    symptoms: [],
+    diagnosis: string,
+    doctorNotes: string,
+    createdAt: string,
+    updatedAt: string,
 }

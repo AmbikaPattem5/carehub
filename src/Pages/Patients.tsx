@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import api from "../services/api"
 import AddPatientModal from "../Components/AddPatientModal"
+import AddViewHistoryModal from "../Components/AddViewHistoryModal"
 import toast from "react-hot-toast"
 import type { Patient } from "../types/PatientTypes"
 function Patients() {
@@ -11,7 +12,13 @@ function Patients() {
     const [status, setStatus] = useState<string>("all")
     const [patientList, setPatientList] = useState<any[]>([])
     const [editPatient, setEditPatient] = useState<Patient | null>(null);
+    const [isViewHistoryOpen, setIsViewHistoryOpen] = useState<boolean>(false)
+    const [patientId, setPatientId] = useState<string>("")
     const today = new Date();
+    function viewHistory(id) {
+        setIsViewHistoryOpen(true);
+        setPatientId(id);
+    }
     async function getPatientList() {
         try {
             const response = await api.get('/patients', {
@@ -100,7 +107,7 @@ function Patients() {
                                         <td className="text-center" className={patient.status == "active" ? "bg-green-300 text-white text-center rounded-xl" : "bg-red-300 text-white text-center rounded-xl"}>{patient.status}</td>
                                         <td>
                                             <div className="flex gap-2 justify-center items-center">
-                                                <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300">View History</button>
+                                                <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300" onClick={() => viewHistory(patient.patientId)}>View History</button>
                                                 <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300" onClick={() => setEditPatient(patient)}>Edit</button>
                                             </div>
                                         </td>
@@ -115,7 +122,7 @@ function Patients() {
                     </thead>
                 </table>
                 {editPatient && <AddPatientModal onClose={() => { setEditPatient(null); getPatientList() }} patient={editPatient} />}
-
+                {isViewHistoryOpen && <AddViewHistoryModal onClose={() => setIsViewHistoryOpen(false)} patientId={patientId} />}
             </div>
             <div className="flex justify-between items-center mx-auto">
                 <div className="">Showing {patientList.length} of {patientList.length} patients</div>

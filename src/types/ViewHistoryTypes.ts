@@ -1,0 +1,17 @@
+export interface ConsultationType {
+    _id: string,
+    consultationId: string,
+    appointment: string,
+    appointmentId: string,
+    patient: string,
+    patientId: string,
+    patientName: string,
+    doctor: string,
+    doctorId: string,
+    doctorName: string,
+    symptoms: [],
+    diagnosis: string,
+    doctorNotes: string,
+    createdAt: string,
+    updatedAt: string,
+}
