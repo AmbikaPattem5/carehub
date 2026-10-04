@@ -74,6 +74,9 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
         if (formData.phone.trim() === '') {
             errors.phone = "Phone is required"
         }
+        else if (!(/^[0-9]*$/.test(formData.phone) && formData.phone.length <= 10)) {
+            errors.phone = "Phone is invalid"
+        }
         if (formData.email.trim() === '') {
             errors.email = "Email is required"
         }
@@ -85,6 +88,10 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
         }
         if (formData.emergencyContact.trim() === '') {
             errors.emergencyContact = "Emergency Contact is required"
+        }
+        else if (!(/^[0-9]*$/.test(formData.phone) && formData.phone.length <= 10)) {
+            errors.emergencyContact = "Emergency Contact is Invalid"
+
         }
         return errors;
     }
@@ -262,13 +269,13 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-semibold text-slate-700">Phone Number <span className="text-rose-500 font-bold">*</span></label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         name="phone"
                                         placeholder="+91 98450 12345"
                                         value={formData.phone}
                                         onChange={handleChange}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'}`}
                                     />
                                     {errors.phone && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
@@ -325,14 +332,14 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-semibold text-slate-700">Emergency Contact <span className="text-rose-500 font-bold">*</span></label>
                                     <input
-                                        type="text"
+                                        type="number"
                                         name="emergencyContact"
                                         placeholder="98450 98765 (Sister)"
                                         value={formData.emergencyContact}
                                         onChange={handleChange}
                                         disabled={isEdit}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.emergencyContact ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.emergencyContact ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'}`}
                                     />
                                     {errors.emergencyContact && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
