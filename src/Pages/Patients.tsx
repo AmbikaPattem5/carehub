@@ -4,7 +4,7 @@ import AddPatientModal from "../Components/AddPatientModal"
 import AddViewHistoryModal from "../Components/AddViewHistoryModal"
 import DeleteConfirmModal from "../Components/DeleteConfirmModal"
 import toast from "react-hot-toast"
-import { Trash2, Search, ChevronDown } from "lucide-react"
+import { Trash2, Search, ChevronDown, Loader2 } from "lucide-react"
 import type { Patient } from "../types/PatientTypes"
 
 function Patients() {
@@ -19,6 +19,7 @@ function Patients() {
     const [patientId, setPatientId] = useState<string>("")
     const [deletePatientTarget, setDeletePatientTarget] = useState<Patient | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(true)
     const today = new Date();
 
     function viewHistory(id: string) {
@@ -27,6 +28,7 @@ function Patients() {
     }
 
     async function getPatientList() {
+        setLoading(true);
         try {
             const response = await api.get('/patients', {
                 params: { search: search === "all" ? "" : search, gender, bloodGroup, status }
@@ -37,6 +39,8 @@ function Patients() {
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to fetch patients")
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -208,7 +212,16 @@ function Patients() {
                                         </td>
                                     </tr>
                                 )
-                            })) : (
+                            })) : loading ? (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-12 text-slate-500">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Loader2 className="w-7 h-7 text-teal-600 animate-spin" />
+                                            <span className="text-xs font-semibold text-slate-500">Loading patients records...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
                                 <tr>
                                     <td colSpan={7} className="text-center py-8 text-slate-500">No patients found</td>
                                 </tr>

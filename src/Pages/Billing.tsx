@@ -4,7 +4,7 @@ import type { Billing as BillingData, StatisticsResponse } from "../types/Billin
 import api from "../services/api"
 import toast from "react-hot-toast";
 import AddPaymentModal from "../Components/AddPaymentModal"
-import { Search, Trash2 } from "lucide-react"
+import { Search, Trash2, Loader2 } from "lucide-react"
 import type { BillingSearch } from "../types/BillingTypes"
 import AddDownloadReceiptModal from "../Components/AddDownloadReceiptModal"
 import DeleteConfirmModal from "../Components/DeleteConfirmModal"
@@ -33,6 +33,7 @@ function Billing() {
     const [editBilling, setEditBilling] = useState<BillingData | null>(null)
     const [deleteInvoiceTarget, setDeleteInvoiceTarget] = useState<BillingData | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(true)
 
     function handleEdit(billing: BillingData) {
         setIsBilling(true);
@@ -79,6 +80,7 @@ function Billing() {
     }
 
     async function loadData() {
+        setLoading(true);
         try {
             const response = await api.get("/bills", {
                 params: {
@@ -95,6 +97,8 @@ function Billing() {
         }
         catch (err: any) {
             toast.error(err?.response?.data?.message || "Failed to load billing data")
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -220,7 +224,16 @@ function Billing() {
                                                 </td>
                                             </tr>
                                         )
-                                    })) : (
+                                    })) : loading ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-12 text-slate-500">
+                                                <div className="flex flex-col items-center justify-center gap-2">
+                                                    <Loader2 className="w-7 h-7 text-teal-600 animate-spin" />
+                                                    <span className="text-xs font-semibold text-slate-500">Loading invoices...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
                                         <tr>
                                             <td colSpan={7} className="text-center py-8 text-slate-500">No invoices found</td>
                                         </tr>

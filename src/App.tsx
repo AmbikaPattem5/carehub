@@ -7,11 +7,14 @@ import { BrowserRouter } from 'react-router-dom'
 import AppRoutes from './Routes/AppRoutes'
 import { Toaster } from 'react-hot-toast'
 import AuthProvider from './Context/AuthProvider'
+import GlobalProgressBar from './Components/GlobalProgressBar'
+
 function App() {
 
   return (
     <>
       <div>
+        <GlobalProgressBar />
         <Toaster />
         <BrowserRouter>
           <AuthProvider>

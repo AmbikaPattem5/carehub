@@ -1,7 +1,7 @@
 import type { Patient } from "../types/PatientTypes";
 import type { Doctor } from "../types/DoctorTypes";
 import { AvailableHours } from "../types/DoctorTypes";
-import { Calendar, X } from "lucide-react";
+import { Calendar, X, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react"
 import type { AppointmentRequest, AppointmentError, AppointmentResponse } from "../types/AppointmentTypes";
 import api from "../services/api";
@@ -38,6 +38,7 @@ function AddAppointmentModal({ onClose, appointment = null, doctor = null, resch
     const [doctors, setDoctors] = useState<Doctor[]>([])
     const [availableSlots, setAvailableSlots] = useState<string[]>([])
     const [fee, setFee] = useState<number | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     useEffect(() => {
         async function loadData() {
             try {
@@ -133,6 +134,7 @@ function AddAppointmentModal({ onClose, appointment = null, doctor = null, resch
                 date: formData.date,
                 time: formData.time
             }
+            setIsSubmitting(true);
             try {
                 if (!appointment?._id) return;
                 const response = await api.patch(`/appointments/${appointment._id}/reschedule`, payLoad)
@@ -140,39 +142,45 @@ function AddAppointmentModal({ onClose, appointment = null, doctor = null, resch
                     console.log('updated data', response.data);
                     toast.success("Appointment updated successfully");
                     onClose();
-
                 }
             }
             catch (error: any) {
                 toast.error(error?.response?.data?.message || "Failed to update appointment")
+            } finally {
+                setIsSubmitting(false);
             }
         }
         else if (isEdit && reschedule === "edit") {
+            setIsSubmitting(true);
             try {
                 if (!appointment?._id) return;
                 const response = await api.patch(`appointments/${appointment._id}`, editData)
                 console.log("update date", response.data)
                 if (response && response.data.success) {
-
                     toast.success("Appointment Updated Successfully")
                     onClose();
-
                 }
             }
             catch (err: any) {
                 toast.error(err?.response?.data?.message || "Failed to update appointment")
+            } finally {
+                setIsSubmitting(false);
             }
-
         }
         else {
+            setIsSubmitting(true);
             try {
                 const response = await api.post('/appointments', formData);
-                console.log('Appointment created:', response.data);
-                onClose();
-
+                if (response && response.data.success) {
+                    console.log('Appointment created:', response.data);
+                    toast.success("Appointment booked successfully");
+                    onClose();
+                }
             }
-            catch (error) {
-                console.log(error);
+            catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to book appointment");
+            } finally {
+                setIsSubmitting(false);
             }
         }
     }
@@ -280,8 +288,17 @@ function AddAppointmentModal({ onClose, appointment = null, doctor = null, resch
                             type="button"
                             onClick={onClose}
                             className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition cursor-pointer">Cancel</button>
-                        <button type="button" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center"
-                        >{isEdit && reschedule === "reshedule" ? "Reshedule" : (isEdit ? "Update" : "Add")} Appointment</button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                        >
+                            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isSubmitting
+                                ? (isEdit && reschedule === "reshedule" ? "Rescheduling..." : (isEdit ? "Updating..." : "Booking..."))
+                                : (isEdit && reschedule === "reshedule" ? "Reschedule" : (isEdit ? "Update" : "Add")) + " Appointment"}
+                        </button>
                     </div>
                 </form>
             </div >

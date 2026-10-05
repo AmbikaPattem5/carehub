@@ -1,12 +1,13 @@
 import type { Billing, paymentRequest } from "../types/BillingTypes"
 import { useState } from "react"
-import { QrCode, CreditCard, Banknote, Check, X } from "lucide-react"
+import { QrCode, CreditCard, Banknote, Check, X, Loader2 } from "lucide-react"
 import React from "react"
 import api from "../services/api"
 import toast from "react-hot-toast"
 
 function AddPaymentModal({ billing, onClose }: { billing: Billing, onClose: () => void }) {
     const [selectedMethod, setSelectedMethod] = useState<"upi" | "card" | "cash">("upi")
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
     const generateDefaultRef = (method: "upi" | "card" | "cash") => {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "")
@@ -39,10 +40,11 @@ function AddPaymentModal({ billing, onClose }: { billing: Billing, onClose: () =
 
     async function handleSubmit(e?: React.SyntheticEvent) {
         if (e) e.preventDefault()
-        try {
-            const targetId = billing?._id || billing?.billId
-            if (!targetId) return
+        const targetId = billing?._id || billing?.billId
+        if (!targetId) return
 
+        setIsSubmitting(true)
+        try {
             const response = await api.patch(`/bills/${targetId}/pay`, {
                 paymentMethod: billingData.paymentMethod,
                 amountPaid: billingData.totalAmount,
@@ -52,11 +54,13 @@ function AddPaymentModal({ billing, onClose }: { billing: Billing, onClose: () =
 
             if (response && response.data.success) {
                 toast.success(response.data.message || "Payment recorded successfully!")
+                onClose()
             }
         } catch (err: any) {
             toast.error(err?.response?.data?.message || "Payment recording failed")
+        } finally {
+            setIsSubmitting(false)
         }
-        onClose()
     }
 
     const patientInitial = billing.patientName
@@ -208,16 +212,26 @@ function AddPaymentModal({ billing, onClose }: { billing: Billing, onClose: () =
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
+                            disabled={isSubmitting}
+                            className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                            disabled={isSubmitting}
+                            className="px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                         >
-                            <Check size={16} /> Confirm Payment & Receipt
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" /> Recording Payment...
+                                </>
+                            ) : (
+                                <>
+                                    <Check size={16} /> Confirm Payment & Receipt
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>

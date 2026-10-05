@@ -1,6 +1,6 @@
 import type { CreatePatientRequest, Gender, PatientStatus, BloodGroup, PatientFormErrors } from "../types/PatientTypes"
 import { useState } from "react"
-import { X, UserPlus } from "lucide-react"
+import { X, UserPlus, Loader2 } from "lucide-react"
 import api from '../services/api'
 import toast from "react-hot-toast"
 function AddPatientModal({ onClose, patient = null }: { onClose: () => void, patient?: CreatePatientRequest | null }) {
@@ -31,6 +31,7 @@ function AddPatientModal({ onClose, patient = null }: { onClose: () => void, pat
     }
     const [formData, setFormData] = useState<CreatePatientRequest>(formInitialValues)
     const [errors, setErrors] = useState<PatientFormErrors>(errorInitialValues)
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     enum Gender {
         Male = "male",
         Female = "female",
@@ -103,6 +104,7 @@ function AddPatientModal({ onClose, patient = null }: { onClose: () => void, pat
             return;
         }
         if (isEdit) {
+            setIsSubmitting(true);
             try {
                 if (!patient?._id) return;
                 const response = await api.patch(`/patients/${patient._id}`, formData)
@@ -110,22 +112,27 @@ function AddPatientModal({ onClose, patient = null }: { onClose: () => void, pat
                     console.log('updated data', response.data);
                     toast.success("Patient updated successfully");
                     onClose();
-
                 }
             }
             catch (error: any) {
                 toast.error(error?.response?.data?.message || "Failed to update patient")
+            } finally {
+                setIsSubmitting(false);
             }
         }
         else {
+            setIsSubmitting(true);
             try {
                 const response = await api.post('/patients', formData);
-                console.log('Patient created:', response.data);
-                onClose();
-
+                if (response && response.data.success) {
+                    toast.success("Patient registered successfully");
+                    onClose();
+                }
             }
-            catch (error) {
-                console.log(error);
+            catch (error: any) {
+                toast.error(error?.response?.data?.message || "Failed to add patient");
+            } finally {
+                setIsSubmitting(false);
             }
         }
     }
@@ -405,9 +412,11 @@ function AddPatientModal({ onClose, patient = null }: { onClose: () => void, pat
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer"
+                            disabled={isSubmitting}
+                            className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
                         >
-                            {isEdit ? "Update" : "Add Patient"}
+                            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isSubmitting ? (isEdit ? "Updating..." : "Adding...") : (isEdit ? "Update" : "Add Patient")}
                         </button>
                     </div>
                 </form>

@@ -5,7 +5,7 @@ import { Specialization } from "../types/DoctorTypes"
 import DoctorCard from "../Components/DoctorCard"
 import api from "../services/api"
 import toast from "react-hot-toast"
-import { Search, Plus, User } from "lucide-react"
+import { Search, Plus, User, Loader2 } from "lucide-react"
 
 function Doctors() {
     const [isDoctorModal, setIsDoctorModal] = useState<boolean>(false)
@@ -13,12 +13,14 @@ function Doctors() {
     const [specialization, setSpecialization] = useState<string>("all")
     const [status, setStatus] = useState<string>("all")
     const [doctorList, setDoctorList] = useState<Doctor[]>([])
+    const [loading, setLoading] = useState<boolean>(true)
 
     function addDoctor() {
         setIsDoctorModal(true)
     }
 
     async function getDoctorList() {
+        setLoading(true);
         try {
             const response = await api.get('/doctors', {
                 params: {
@@ -32,6 +34,8 @@ function Doctors() {
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to fetch doctors")
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -127,7 +131,12 @@ function Doctors() {
 
             {/* Doctors Grid */}
             <div>
-                {doctorList && doctorList.length > 0 ? (
+                {loading ? (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+                        <span className="text-xs font-semibold text-slate-500">Loading doctors directory...</span>
+                    </div>
+                ) : doctorList && doctorList.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                         {doctorList.map((doctor) => (
                             <DoctorCard

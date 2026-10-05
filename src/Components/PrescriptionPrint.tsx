@@ -2,40 +2,42 @@ import { useState, useEffect } from "react";
 import type { PrescriptionMedicines } from "../types/PrescriptionTypes"
 import api from "../services/api"
 import type { Patient } from "../types/PatientTypes"
-import { Phone, Mail, Printer, Download, X } from "lucide-react"
+import { Phone, Mail, Printer, Download, X, Loader2 } from "lucide-react"
 import logo from "../assets/logo.png"
 
 function PrescriptionPrint({ onClose, patientId, prescriptionId }: { onClose: () => void, patientId: string, prescriptionId: string }) {
-    console.log("patient and prescription", patientId, prescriptionId)
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionMedicines | null>(null)
     const [patientData, setPatientData] = useState<Patient | null>(null)
+    const [loading, setLoading] = useState<boolean>(true)
+
     useEffect(() => {
         async function loadPatientPrecriptionData() {
+            setLoading(true);
             try {
-                const response = await api.get(`/prescriptions/patient/${patientId}`)
-                const filterPrescriptionData = response.data.prescriptions;
-                const updatedData = filterPrescriptionData?.find((prescription: any) => prescription.prescriptionId === prescriptionId)
+                const [prescRes, patientRes] = await Promise.allSettled([
+                    api.get(`/prescriptions/patient/${patientId}`),
+                    api.get(`/patients/${patientId}`)
+                ]);
 
-                setPrescriptionData(updatedData)
-                console.log("PrescriptionIdData", updatedData)
-
-            }
-            catch (error) {
-                console.log(error);
-            }
-            try {
-                const response = await api.get(`/patients/${patientId}`);
-                if (response && response.data && response.data.success) {
-                    console.log(response.data.patient)
-                    setPatientData(response.data.patient)
+                if (prescRes.status === "fulfilled" && prescRes.value?.data?.prescriptions) {
+                    const filterPrescriptionData = prescRes.value.data.prescriptions;
+                    const updatedData = filterPrescriptionData?.find((prescription: any) => prescription.prescriptionId === prescriptionId);
+                    setPrescriptionData(updatedData);
                 }
-            }
-            catch (err) {
-                console.log(err)
+
+                if (patientRes.status === "fulfilled" && patientRes.value?.data?.patient) {
+                    setPatientData(patientRes.value.data.patient);
+                }
+            } catch (err) {
+                console.error("Failed to load prescription print data", err);
+            } finally {
+                setLoading(false);
             }
         }
-        loadPatientPrecriptionData();
-    }, [])
+        if (patientId) {
+            loadPatientPrecriptionData();
+        }
+    }, [patientId, prescriptionId])
     const birthDate = patientData?.dateOfBirth ? new Date(patientData.dateOfBirth) : new Date();
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
@@ -94,8 +96,14 @@ function PrescriptionPrint({ onClose, patientId, prescriptionId }: { onClose: ()
                 </div>
 
                 {/* Prescription Printable Paper Container */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs max-w-xl mx-auto text-slate-800 space-y-4" id="prescription-content">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50 min-h-[300px]">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                            <Loader2 className="w-8 h-8 text-teal-600 animate-spin mb-3" />
+                            <p className="text-sm font-medium">Loading prescription details...</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs max-w-xl mx-auto text-slate-800 space-y-4" id="prescription-content">
                         {/* Clinic & Doctor Header */}
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4 border-b border-slate-200/90">
                             {/* Clinic Info */}
@@ -213,7 +221,8 @@ function PrescriptionPrint({ onClose, patientId, prescriptionId }: { onClose: ()
                                 Digital Signature
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Modal Footer Controls */}
@@ -221,14 +230,16 @@ function PrescriptionPrint({ onClose, patientId, prescriptionId }: { onClose: ()
                     <button
                         type="button"
                         onClick={handlePrint}
-                        className="px-4 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        disabled={loading}
+                        className="px-4 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                     >
                         <Printer size={15} /> Print Prescription
                     </button>
                     <button
                         type="button"
                         onClick={handlePrint}
-                        className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                        disabled={loading}
+                        className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                     >
                         <Download size={14} /> Download PDF
                     </button>

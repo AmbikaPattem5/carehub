@@ -6,7 +6,7 @@ import toast from "react-hot-toast"
 import type { AppointmentResponse } from "../types/AppointmentTypes";
 import AddPrescriptionModal from "../Components/AddPrescriptionModal"
 import PrescriptionPrint from "../Components/PrescriptionPrint"
-import { Calendar } from "lucide-react"
+import { Calendar, Loader2 } from "lucide-react"
 
 
 function Dashboard() {
@@ -20,6 +20,7 @@ function Dashboard() {
     const [patientId, setPatientId] = useState<string>("")
     const [isPrecriptionOpen, setIsPrescriptionOpen] = useState<Boolean>(false)
     const [prescriptionId, setPrescriptionId] = useState<string>("")
+    const [loading, setLoading] = useState<boolean>(true);
     console.log(role)
     useEffect(() => {
         async function loadData() {
@@ -53,6 +54,7 @@ function Dashboard() {
         const formattedDate = `${year}-${month}-${day}`;
 
         async function getAppointments() {
+            setLoading(true);
             try {
                 const response = await api.get("/appointments", {
                     params: {
@@ -67,6 +69,8 @@ function Dashboard() {
             catch (error: any) {
                 toast.error(error?.response?.data?.message || "Failed to load appointments")
 
+            } finally {
+                setLoading(false);
             }
         }
         getAppointments()
@@ -255,7 +259,16 @@ function Dashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {appointmentList && appointmentList.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="py-14 text-center text-slate-400">
+                                        <div className="flex flex-col items-center justify-center gap-2">
+                                            <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+                                            <span className="text-xs font-semibold text-slate-500">Loading today's schedule...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : appointmentList && appointmentList.length > 0 ? (
                                 appointmentList.map((appointment) => (
                                     <tr key={appointment._id} className="hover:bg-slate-50/80 transition-colors text-sm">
                                         <td className="py-4 px-6 font-semibold text-slate-900">

@@ -6,7 +6,7 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import type { Doctor } from "../types/DoctorTypes";
 import { Status } from '../types/AppointmentTypes'
-import { X, Trash2 } from "lucide-react"
+import { X, Trash2, Loader2 } from "lucide-react"
 
 function Appointments() {
     const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false)
@@ -21,6 +21,7 @@ function Appointments() {
     const [reshedule, setReshedule] = useState<string | null>("reshedule")
     const [deleteAppointmentTarget, setDeleteAppointmentTarget] = useState<AppointmentResponse | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
+    const [loading, setLoading] = useState<boolean>(true)
 
     useEffect(() => {
         getDoctors()
@@ -85,6 +86,7 @@ function Appointments() {
     }
 
     async function getAppointmentList() {
+        setLoading(true);
         try {
             const response = await api.get('/appointments',
                 {
@@ -100,6 +102,8 @@ function Appointments() {
         }
         catch (err: any) {
             toast.error(err?.response?.data?.message || "Failed to fetch appointments")
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -217,7 +221,16 @@ function Appointments() {
                                             </td>
                                         </tr>
                                     )
-                                })) : (
+                                })) : loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-12 text-slate-500">
+                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                <Loader2 className="w-7 h-7 text-teal-600 animate-spin" />
+                                                <span className="text-xs font-semibold text-slate-500">Loading appointments...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
                                     <tr>
                                         <td colSpan={6} className="text-center py-8 text-slate-500 text-sm">No appointments found</td>
                                     </tr>

@@ -6,8 +6,10 @@ import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png"
 import toast from "react-hot-toast"
 import useAuth from "../CustomHooks/useAuth";
+import { Loader2 } from "lucide-react";
 function Login() {
     const [formData, setFormData] = useState<LoginRequestType>({ email: '', password: '' })
+    const [isLoading, setIsLoading] = useState<boolean>(false)
     const navigate = useNavigate()
     const { login } = useAuth();
     useEffect(() => {
@@ -26,6 +28,7 @@ function Login() {
 
     }
     async function executeLogin(form: LoginRequestType) {
+        setIsLoading(true);
         try {
             const response = await api.post("auth/login", form)
             console.log(response.data)
@@ -39,8 +42,9 @@ function Login() {
         catch (err: any) {
             toast.error(err?.response?.data?.message || "Something went wrong.Please try again")
             console.log(err)
+        } finally {
+            setIsLoading(false);
         }
-
     }
     function handleLogin(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -71,7 +75,10 @@ function Login() {
                             <span className="absolute top-2 right-2 text-sm text-green-600 hover:underline hover:text-green-700"><Link to="/forgot-password">Forgot Password?</Link></span>
                         </div>
                     </div>
-                    <button type="submit" disabled={formData.email == "" || formData.password == "" ? true : false} className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer mt-2">Login</button>
+                    <button type="submit" disabled={formData.email == "" || formData.password == "" || isLoading} className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer mt-2 disabled:opacity-60">
+                        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {isLoading ? "Logging in..." : "Login"}
+                    </button>
                     <p className="text-center text-sm text-gray-500">Don't have an account? <Link to="/register" className="text-red-600 hover:underline hover:text-red-700">Register here</Link></p>
                 </form>
                 <div className="flex items-center justify-center gap-4 ">
