@@ -1,4 +1,4 @@
-import { X, ChevronDown, Check, Plus, Trash2, Calendar, FileText } from "lucide-react"
+import { X, ChevronDown, Check, Plus, Trash2, Calendar, FileText, Loader2 } from "lucide-react"
 import api from "../services/api"
 import type { Patient } from "../types/PatientTypes"
 import { useState, useEffect, useRef } from "react"
@@ -43,6 +43,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
     const [medicineData, setMedicineData] = useState<Medicines[]>([])
     // const [prescriptionData, setPrescriptionData] = useState<PrescriptionMedicines>(initialPrescriptionData)
     const [medicineItem, setMedicineItem] = useState<Medicines>(initialMedicineData)
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     // const [consId, setConsId] = useState<string>("")
 
 
@@ -134,42 +135,46 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
             toast.error("Fill the required fields");
             return;
         }
+        setIsSubmitting(true);
         try {
-            const response = await api.post("/consultations", { ...formData, symptoms: symptomsToSend });
-            if (response && response.data && response.data.success) {
-                consId = response.data.consultation.consultationId;
-                console.log("consultation Id ===", consId)
-            }
-            console.log(response.data?.consultation?.consultationId)
-        }
-        catch (err: any) {
-            toast.error(err?.response?.data?.message || "Failed to save consultation")
-        }
-        const prescriptionNotes: any = {
-            consultationId: consId,
-            patientId: patientId,
-            medicines: medicineData,
-
-        }
-        if (consId === "" && medicineData.length === 0) {
-            return;
-        }
-        else if (medicineData.length === 0) {
-            return;
-        }
-        else {
-            let prescriptionId = null;
             try {
-                const response = await api.post("/prescriptions", prescriptionNotes);
+                const response = await api.post("/consultations", { ...formData, symptoms: symptomsToSend });
                 if (response && response.data && response.data.success) {
-                    prescriptionId = response.data.prescriptionId
+                    consId = response.data.consultation.consultationId;
+                    console.log("consultation Id ===", consId)
                 }
-                console.log(response.data)
+                console.log(response.data?.consultation?.consultationId)
             }
             catch (err: any) {
-                toast.error(err?.response?.data?.message || "Failed to save prescription")
+                toast.error(err?.response?.data?.message || "Failed to save consultation")
             }
-            onClose(true, prescriptionId || "")
+            const prescriptionNotes: any = {
+                consultationId: consId,
+                patientId: patientId,
+                medicines: medicineData,
+            }
+            if (consId === "" && medicineData.length === 0) {
+                return;
+            }
+            else if (medicineData.length === 0) {
+                return;
+            }
+            else {
+                let prescriptionId = null;
+                try {
+                    const response = await api.post("/prescriptions", prescriptionNotes);
+                    if (response && response.data && response.data.success) {
+                        prescriptionId = response.data.prescriptionId
+                    }
+                    console.log(response.data)
+                }
+                catch (err: any) {
+                    toast.error(err?.response?.data?.message || "Failed to save prescription")
+                }
+                onClose(true, prescriptionId || "")
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -475,9 +480,15 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2"
+                            disabled={isSubmitting}
+                            className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60"
                         >
-                            <span className="font-serif italic font-black text-sm">℞</span> Issue & Print Prescription
+                            {isSubmitting ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                                <span className="font-serif italic font-black text-sm">℞</span>
+                            )}
+                            {isSubmitting ? "Issuing..." : "Issue & Print Prescription"}
                         </button>
                     </div>
                 </div>

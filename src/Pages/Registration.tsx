@@ -5,6 +5,7 @@ import type { RegistrationFormErrorType } from "../types/RegistrationType"
 import logo from "../assets/logo.png"
 import { Link, useNavigate } from "react-router-dom"
 import toast from "react-hot-toast"
+import { Loader2 } from "lucide-react"
 function Registration() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState<RegistrationRequestBodyType>({
@@ -13,6 +14,7 @@ function Registration() {
         password: "",
         role: ""
     })
+    const [isLoading, setIsLoading] = useState<boolean>(false)
     const [formErrors, setFormErrors] = useState<RegistrationFormErrorType>({
         name: "",
         email: "",
@@ -51,6 +53,7 @@ function Registration() {
         if (Object.values(errors).some((error) => error !== "")) {
             return
         }
+        setIsLoading(true);
         try {
             const response = await api.post("auth/register", formData)
             if (response && response.data.success) {
@@ -62,6 +65,8 @@ function Registration() {
         catch (err: any) {
             toast.error(err?.response?.data?.message || "Something went wrong.Please try again")
             console.log(err)
+        } finally {
+            setIsLoading(false);
         }
     }
     return (
@@ -103,7 +108,10 @@ function Registration() {
                         </select>
                         {formErrors.role && <p className="text-red-500 text-xs">{formErrors.role}</p>}
                     </div>
-                    <button type="submit" className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer mt-2">Submit</button>
+                    <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer mt-2 disabled:opacity-60">
+                        {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {isLoading ? "Submitting..." : "Submit"}
+                    </button>
                 </form>
                 <div className="space-y-1.5 text-center">
                     <p className="text-sm text-gray-500">Already have an Account? <Link to="/login" className="text-emerald-600 hover:text-emerald-700 hover:underline">SignIn</Link></p>

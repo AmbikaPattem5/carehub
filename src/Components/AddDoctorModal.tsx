@@ -1,6 +1,6 @@
 import { AvailableDays, AvailableHours, type CreateDoctorRequest, type Doctor, Status, Specialization, type doctorFormErrors } from "../types/DoctorTypes"
 import { useState } from "react"
-import { X, Stethoscope } from "lucide-react"
+import { X, Stethoscope, Loader2 } from "lucide-react"
 import api from '../services/api'
 import toast from "react-hot-toast"
 function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doctor | null }) {
@@ -29,6 +29,7 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
     }
     const [formData, setFormData] = useState<CreateDoctorRequest>(formInitialValues)
     const [errors, setErrors] = useState<doctorFormErrors>(errorInitialValues);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     //const [editDoctor, setEditDoctor] = useState<boolean>(isEdit);
     function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
         const target = e.target as HTMLInputElement;
@@ -101,32 +102,35 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
             return;
         }
         if (isEdit && doctor?._id) {
+            setIsSubmitting(true);
             try {
                 const response = await api.patch(`/doctors/${doctor._id}`, formData)
                 if (response && response.data.success) {
                     console.log('updated data', response.data);
                     toast.success("Doctor updated successfully");
                     onClose();
-
                 }
             }
             catch (error: any) {
                 toast.error(error?.response?.data?.message || "Failed to update doctor")
+            } finally {
+                setIsSubmitting(false);
             }
         }
         else {
+            setIsSubmitting(true);
             try {
                 const response = await api.post('/doctors', formData);
                 if (response && response.data.success) {
-                    const data = response.data.doctor;
                     console.log('Doctor created:', response.data);
                     toast.success("Doctor created successfully");
                     onClose();
                 }
-
             }
             catch (error: any) {
                 toast.error(error?.response?.data?.message || "Failed to create doctor");
+            } finally {
+                setIsSubmitting(false);
             }
         }
     }
@@ -373,9 +377,11 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer"
+                            disabled={isSubmitting}
+                            className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-2"
                         >
-                            {isEdit ? "Update" : "Add Doctor"}
+                            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isSubmitting ? (isEdit ? "Updating..." : "Adding...") : (isEdit ? "Update" : "Add Doctor")}
                         </button>
                     </div>
                 </form>
