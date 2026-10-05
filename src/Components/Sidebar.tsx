@@ -48,7 +48,7 @@ function Sidebar() {
                         </NavLink>
                     </div>
                     <div className="px-4">
-                        <button className="w-full flex items-center px-4 py-2.5 rounded-lg transition-colors bg-slate-600 text-white font-medium" onClick={logout}>Logout</button>
+                        <button className="w-full flex items-center px-4 py-2.5 rounded-lg transition-colors bg-slate-600 text-white font-medium cursor-pointer" onClick={logout}>Logout</button>
                     </div>
                 </div>
             </div>

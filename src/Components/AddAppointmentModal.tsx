@@ -8,9 +8,9 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import { Status } from '../types/AppointmentTypes'
 import type { EditData } from "../types/AppointmentTypes"
-function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onClose: () => void, appointment: AppointmentResponse | null, doctor: Doctor | null, reschedule: string }) {
+function AddAppointmentModal({ onClose, appointment = null, doctor = null, reschedule = "" }: { onClose: () => void, appointment?: AppointmentResponse | null, doctor?: Doctor | null, reschedule?: string | null }) {
     const formInitialValues: AppointmentRequest = {
-        patientId: appointment?.patientId,
+        patientId: appointment?.patientId || "",
         doctorId: appointment?.doctorId || doctor?.doctorId || "",
         date: appointment?.date || "",
         time: appointment?.time || "",
@@ -27,7 +27,7 @@ function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onC
 
     }
     const updateData: EditData = {
-        status: appointment?.status || "",
+        status: (appointment?.status as any) || "",
         notes: ""
     }
 
@@ -134,6 +134,7 @@ function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onC
                 time: formData.time
             }
             try {
+                if (!appointment?._id) return;
                 const response = await api.patch(`/appointments/${appointment._id}/reschedule`, payLoad)
                 if (response && response.data.success) {
                     console.log('updated data', response.data);
@@ -148,14 +149,17 @@ function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onC
         }
         else if (isEdit && reschedule === "edit") {
             try {
+                if (!appointment?._id) return;
                 const response = await api.patch(`appointments/${appointment._id}`, editData)
                 console.log("update date", response.data)
                 if (response && response.data.success) {
 
                     toast.success("Appointment Updated Successfully")
+                    onClose();
+
                 }
             }
-            catch (err) {
+            catch (err: any) {
                 toast.error(err?.response?.data?.message || "Failed to update appointment")
             }
 
@@ -172,9 +176,9 @@ function AddAppointmentModal({ onClose, appointment, doctor, reschedule }: { onC
             }
         }
     }
-    function getDoctorFee(doctorId) {
+    function getDoctorFee(doctorId: string) {
         let doctorData = doctors.find((doctor) => doctor.doctorId === doctorId);
-        let fees = doctorData.consultationFee
+        let fees = doctorData?.consultationFee || 0
         console.log(fees);
         setFee(fees)
     }
