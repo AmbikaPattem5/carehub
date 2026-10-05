@@ -1,11 +1,13 @@
 import AddAppointmentModal from "../Components/AddAppointmentModal";
+import DeleteConfirmModal from "../Components/DeleteConfirmModal";
 import { useState, useEffect } from "react";
 import type { AppointmentResponse } from "../types/AppointmentTypes";
 import api from "../services/api";
 import toast from "react-hot-toast";
 import type { Doctor } from "../types/DoctorTypes";
 import { Status } from '../types/AppointmentTypes'
-import { X } from "lucide-react"
+import { X, Trash2 } from "lucide-react"
+
 function Appointments() {
     const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false)
     const [appointmentList, setAppointmentList] = useState<AppointmentResponse[] | null>(null)
@@ -17,19 +19,9 @@ function Appointments() {
     const [checkInStatus, setCheckInStatus] = useState<string | null>(null)
     const [cancelAppointment, setCancelAppointment] = useState<AppointmentResponse | null>(null)
     const [reshedule, setReshedule] = useState<string | null>("reshedule")
+    const [deleteAppointmentTarget, setDeleteAppointmentTarget] = useState<AppointmentResponse | null>(null)
+    const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
-    // const editData ={
-    //     status : "",
-    //     notes : ""
-    // }
-
-    // enum Status {
-    //     All = "all",
-    //     Confirmed = "confirmed",
-    //     Pending = "pending",
-    //     Completed = "completed"
-
-    // }
     useEffect(() => {
         getDoctors()
     }, [])
@@ -48,7 +40,6 @@ function Appointments() {
         }
     }
 
-
     async function getDoctors() {
         try {
             const response = await api.get('/doctors')
@@ -60,6 +51,7 @@ function Appointments() {
             toast.error(err?.response?.data?.message || "Failed to fetch doctors")
         }
     }
+
     async function handleCancelAppointment(id: string) {
         try {
             const response = await api.patch(`/appointments/${id}/cancel`)
@@ -73,6 +65,25 @@ function Appointments() {
             toast.error(err?.response?.data?.message || "Failed to cancel appointment")
         }
     }
+
+    async function handleDeleteAppointment() {
+        if (!deleteAppointmentTarget) return;
+        setIsDeleting(true);
+        try {
+            const targetId = deleteAppointmentTarget._id || deleteAppointmentTarget.appointmentId;
+            const response = await api.delete(`/appointments/${targetId}`);
+            if (response.data.success) {
+                toast.success("Appointment deleted successfully");
+                setDeleteAppointmentTarget(null);
+                getAppointmentList();
+            }
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to delete appointment");
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+
     async function getAppointmentList() {
         try {
             const response = await api.get('/appointments',
@@ -82,8 +93,6 @@ function Appointments() {
                     }
                 }
             )
-            console.log("appointmentList" + response.data)
-
             if (response && response.data.success) {
                 setAppointmentList(response.data.appointments)
                 setinitialAppointmentList(response.data.appointments);
@@ -98,11 +107,15 @@ function Appointments() {
         getAppointmentList()
     }, [status, date])
 
-
     function filterDoctorId(id: string) {
-        const updatedAppointmentList = initialAppointmentList.filter((appointment) => (appointment.doctorId === id));
+        if (!id || id === "all") {
+            setAppointmentList(initialAppointmentList);
+            return;
+        }
+        const updatedAppointmentList = initialAppointmentList?.filter((appointment) => (appointment.doctorId === id)) || [];
         setAppointmentList(updatedAppointmentList)
     }
+
     return (
         <div className="w-full h-full mx-auto bg-gray-200 border-b border-gray-300">
             <div className="w-full mx-auto py-8 px-6 flex flex-col gap-4">
@@ -112,42 +125,48 @@ function Appointments() {
                         <p>Book, track and manage patient visits and consultation visits</p>
                     </div>
                     <div className="space-y-1 flex items-end">
-                        <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl  text-white font-bold py-2 px-4 rounded cursor-pointer" onClick={() => setIsAppointmentModal(true)}>Add Appointment</button>
+                        <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 rounded cursor-pointer transition shadow-xs" onClick={() => setIsAppointmentModal(true)}>Add Appointment</button>
                         {isAppointmentModal && <AddAppointmentModal onClose={() => setIsAppointmentModal(false)} appointment={null} />}
                     </div>
                 </div>
-                <div className="flex flex-row gap-6 border border-gray-300 rounded-xl p-2 ">
-
+                <div className="flex flex-row gap-6 border border-gray-300 rounded-xl p-2 bg-white">
                     <div>
-                        <label>Date </label>
-                        <input type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} className="border border-gray-300 hover:bg-gray-300 cursor-pointer rounded-xl p-2 m-2" />
+                        <label className="text-xs font-semibold text-slate-700">Date: </label>
+                        <input type="date" name="date" value={date || ""} onChange={(e) => setDate(e.target.value)} className="border border-gray-300 hover:bg-gray-100 cursor-pointer rounded-xl p-2 m-1 text-sm" />
                     </div>
                     <div>
-                        <label>Doctor </label>
-                        <select onChange={(e) => filterDoctorId(e.target.value)} className="border border-gray-300 rounded-xl hover:bg-gray-300 cursor-pointer p-2 m-2">
-
+                        <label className="text-xs font-semibold text-slate-700">Doctor: </label>
+                        <select onChange={(e) => filterDoctorId(e.target.value)} className="border border-gray-300 rounded-xl hover:bg-gray-100 cursor-pointer p-2 m-1 text-sm">
+                            <option value="all">All Doctors</option>
                             {doctors.map((doctor) => {
                                 return (
-                                    <option key={doctor.doctorId} value={doctor.doctorId} >{doctor.name}</option>
+                                    <option key={doctor.doctorId} value={doctor.doctorId}>{doctor.name}</option>
                                 )
                             })}
                         </select>
                     </div>
-                    <div>
+                    <div className="flex items-center flex-wrap gap-1">
                         {
                             Object.entries(Status).map(([key, value]) => {
                                 return (
-                                    <button type="button" value={value} onClick={() => setStatus(value)} className="border border-gray-300 rounded-xl p-2 hover:bg-gray-300 cursor-pointer m-2">{key}</button>
+                                    <button
+                                        type="button"
+                                        key={key}
+                                        value={value}
+                                        onClick={() => setStatus(value === "all" ? null : value)}
+                                        className={`border border-gray-300 rounded-xl px-2.5 py-1.5 text-xs font-medium cursor-pointer transition m-1 ${status === value || (value === "all" && !status) ? "bg-emerald-600 text-white" : "hover:bg-gray-100 text-slate-700"}`}
+                                    >
+                                        {key}
+                                    </button>
                                 )
-                            }
-                            )
+                            })
                         }
                     </div>
                 </div>
                 <div>
-                    <table className="border w-full border-gray-300 rounded-3xl">
+                    <table className="border w-full border-gray-300 rounded-3xl bg-white shadow-xs">
                         <thead>
-                            <tr className="border-b border-gray-300 bg-gray-200 h-10 font-semibold text-center">
+                            <tr className="border-b border-gray-300 bg-gray-200 h-10 font-semibold text-center text-sm">
                                 <th>Time & Token</th>
                                 <th>Patient</th>
                                 <th>Assigned Doctor</th>
@@ -159,29 +178,48 @@ function Appointments() {
                         <tbody>
                             {
                                 appointmentList && appointmentList.length > 0 ? (appointmentList.map((appointment) => {
-
                                     return (
-                                        <tr key={appointment._id} className="border-b border-gray-300">
-                                            <td className="text-center">{appointment.time + appointment.appointmentId}</td>
-                                            <td className="text-center">{appointment.patientName}</td>
-                                            <td className="text-center">{appointment.doctorName}</td>
-                                            <td className="text-center">{appointment.reason}</td>
-                                            <td className="text-center" className={appointment.status == "active" ? "bg-green-300 text-white text-center rounded-xl" : "bg-red-300 text-white text-center rounded-xl"}>{appointment.status}</td>
+                                        <tr key={appointment._id} className="border-b border-gray-200 hover:bg-slate-50 transition">
+                                            <td className="text-center font-medium text-slate-700 py-3 text-sm">
+                                                <div className="font-semibold text-slate-900">{appointment.time || (appointment as any).timeSlot}</div>
+                                                <div className="text-xs text-teal-600 font-medium">{(appointment as any).token || appointment.appointmentId}</div>
+                                            </td>
+                                            <td className="text-center font-semibold text-slate-900 text-sm">{appointment.patientName}</td>
+                                            <td className="text-center text-slate-700 text-sm">{appointment.doctorName}</td>
+                                            <td className="text-center text-slate-600 text-sm max-w-xs truncate">{appointment.reason}</td>
+                                            <td className="text-center">
+                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                                                    appointment.status === "confirmed" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
+                                                    appointment.status === "checked-in" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                                                    appointment.status === "completed" ? "bg-slate-100 text-slate-800 border border-slate-200" :
+                                                    appointment.status === "cancelled" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                                                    "bg-amber-100 text-amber-800 border border-amber-200"
+                                                }`}>
+                                                    {appointment.status}
+                                                </span>
+                                            </td>
                                             <td>
-                                                <div className="flex gap-2 justify-center items-center">
-                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => handleCheckIn(appointment._id)}>Check In</button>
-                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => { setRescheduleAppointment(appointment); setReshedule("reschedule") }}>Reschedule</button>
-                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => { setRescheduleAppointment(appointment); setReshedule("edit") }}>Edit</button>
-                                                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300 cursor-pointer" onClick={() => handleCancelAppointment(appointment._id)}><X size={16} /></button>
-
-
+                                                <div className="flex gap-1.5 justify-center items-center py-2">
+                                                    {appointment.status !== 'checked-in' && appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
+                                                        <button className="border border-teal-200 bg-teal-50 text-teal-700 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-teal-100 cursor-pointer transition" onClick={() => handleCheckIn(appointment._id)}>Check In</button>
+                                                    )}
+                                                    <button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("reschedule") }}>Reschedule</button>
+                                                    <button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("edit") }}>Edit</button>
+                                                    {appointment.status !== 'cancelled' && (
+                                                        <button className="border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-xl p-1 cursor-pointer transition" title="Cancel Appointment" onClick={() => handleCancelAppointment(appointment._id)}>
+                                                            <X size={15} />
+                                                        </button>
+                                                    )}
+                                                    <button className="border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl p-1 cursor-pointer transition" title="Delete Appointment" onClick={() => setDeleteAppointmentTarget(appointment)}>
+                                                        <Trash2 size={15} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     )
                                 })) : (
                                     <tr>
-                                        <td colSpan={7} className="text-center py-4">No patients found</td>
+                                        <td colSpan={6} className="text-center py-8 text-slate-500 text-sm">No appointments found</td>
                                     </tr>
                                 )
                             }
@@ -195,10 +233,21 @@ function Appointments() {
                             appointment={rescheduleAppointment} reschedule={reshedule}
                         />
                     )}
+
+                    {deleteAppointmentTarget && (
+                        <DeleteConfirmModal
+                            isOpen={!!deleteAppointmentTarget}
+                            title="Delete Appointment"
+                            itemName={`${deleteAppointmentTarget.patientName} with ${deleteAppointmentTarget.doctorName} (${deleteAppointmentTarget.appointmentId})`}
+                            message={`Are you sure you want to permanently delete appointment ${deleteAppointmentTarget.appointmentId}?`}
+                            isLoading={isDeleting}
+                            onConfirm={handleDeleteAppointment}
+                            onClose={() => setDeleteAppointmentTarget(null)}
+                        />
+                    )}
                 </div>
             </div>
         </div>
-
     )
 }
 export default Appointments;

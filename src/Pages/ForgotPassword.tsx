@@ -39,7 +39,7 @@ function ForgotPassword() {
                 navigate("/login")
             }
         }
-        catch (err) {
+        catch (err: any) {
             toast.error(err?.response?.data?.message || "Something went wrong.Please try again")
         }
     }

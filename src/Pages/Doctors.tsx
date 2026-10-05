@@ -1,35 +1,19 @@
 import { useState, useEffect } from "react"
 import AddDoctorModal from "../Components/AddDoctorModal"
 import type { Doctor } from '../types/DoctorTypes'
-import {
-    Specialization
-} from "../types/DoctorTypes"
+import { Specialization } from "../types/DoctorTypes"
 import DoctorCard from "../Components/DoctorCard"
 import api from "../services/api"
 import toast from "react-hot-toast"
+import { Search, Plus, User } from "lucide-react"
+
 function Doctors() {
     const [isDoctorModal, setIsDoctorModal] = useState<boolean>(false)
-    const [search, setSearch] = useState<string>("");
-    const [specialization, setSpecialization] = useState<string>("");
-    const [status, setStatus] = useState<string>("");
+    const [search, setSearch] = useState<string>("")
+    const [specialization, setSpecialization] = useState<string>("all")
+    const [status, setStatus] = useState<string>("all")
     const [doctorList, setDoctorList] = useState<Doctor[]>([])
-    const enum Status {
-        all = "all",
-        active = "active",
-        onLeave = "onLeave"
-    }
-    // const enum Specialization {
-    //     all = "all",
-    //     Cardiologist = "Cardiologist",
-    //     Dermatologist = "Dermatologist",
-    //     Gynecologist = "Gynecologist",
-    //     Pediatrician = "Pediatrician",
-    //     GeneralPhysician = "General Physician",
-    //     Orthopedic = "Orthopedic",
-    //     Ophthalmologist = "Ophthalmologist",
-    //     Neurologist = "Neurologist",
-    //     Psychiatrist = "Psychiatrist",
-    // }
+
     function addDoctor() {
         setIsDoctorModal(true)
     }
@@ -45,71 +29,135 @@ function Doctors() {
             })
             if (response.data.success) {
                 setDoctorList(response.data.doctors)
-                console.log("doctors data", response.data.doctors)
             }
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Failed to fetch doctors")
         }
     }
+
     useEffect(() => {
         getDoctorList()
     }, [search, specialization, status])
+
+    const departmentsCount = new Set(doctorList.map((d) => d.specialization).filter(Boolean)).size
+
     return (
+        <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
+            {/* Top Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900">Doctors Directory</h2>
+                    <p className="text-sm text-slate-500 mt-0.5">Manage clinic doctors, specializations, and consultation fees</p>
 
-        <div className="w-full h-full mx-auto bg-gray-200 border-b border-gray-300">
-            <div className="w-full mx-auto py-8 px-6 flex justify-between items-center ">
-                <div className="space-y-1">
-                    <h2 className="text-2xl font-semibold">Doctors Dictionary</h2>
-                    <p>Manage clinic doctors,Specializations and Consultation fees</p>
-                </div>
-                <div className="space-y-1 flex items-end">
-                    <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl  text-white font-bold py-2 px-4 rounded" onClick={addDoctor}>Add Doctor</button>
-                    {isDoctorModal && <AddDoctorModal doctor={null} onClose={() => { setIsDoctorModal(false) }} />}
-                </div>
-            </div>
-            <div className="">
-                <div className="flex gap-4 border border-gray-200 rounded-xl px-6 mb-4">
-                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300">Total Doctors:{doctorList.length}</button>
-                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300">Active on Duty:{doctorList.filter((doctor) => doctor.status === "active").length}</button>
-                    <button className="border border-gray-300 rounded-xl p-1 hover:bg-gray-300">Departments:{doctorList.filter((doctor) => doctor.specialization).length}</button>
-                </div>
-            </div>
-            <div className="w-full mx-auto flex gap-4 border border-gray-200 rounded-xl px-6 mb-4">
-                <div className="flex-1 px-2 py-1.5">
-                    <input type="text" placeholder='search' className="w-48 border border-gray-300 rounded-xl  p-2" onChange={(e) => setSearch(e.target.value)} />
-                </div>
-                <div className="w-48 border border-gray-300 rounded-xl m-2 flex-1 px-2 py-1.5">
-                    <label htmlFor="specialization">Specialization:</label>
-                    <select name="specialization" id="specialization" value={specialization} onChange={(e) => setSpecialization(e.target.value)}>
-                        <option value="all">All Specializations</option>
-                        {Object.entries(Specialization).map(([key, value]) => (<option key={key} value={key}>{key}</option>))}
-                    </select>
-                </div>
-
-                <div className="flex flex-wrap gap-2 border border-gray-300 rounded-xl m-2">
-                    <label>Status</label>
-                    <select name="status" id="status" value={status} onChange={(e) => setStatus(e.target.value)}>
-                        <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-
-                </div>
-
-            </div>
-            <div>
-                <div className="">
-                    <div className="grid grid-cols-3 gap-4">{
-                        doctorList && doctorList.length > 0 && doctorList.map((doctor) => <DoctorCard key={doctor.doctorId} doctor={doctor} getDoctorList={getDoctorList} />)
-                    }
+                    {/* Stat Pills */}
+                    <div className="flex flex-wrap items-center gap-2.5 mt-3">
+                        <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">
+                            Total Doctors: <strong className="ml-1 text-slate-900 font-bold">{doctorList.length}</strong>
+                        </span>
+                        <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">
+                            Active On Duty: <strong className="ml-1 text-emerald-700 font-bold">{doctorList.filter((d) => d.status === "active").length}</strong>
+                        </span>
+                        <span className="inline-flex items-center px-3.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">
+                            Departments: <strong className="ml-1 text-slate-900 font-bold">{departmentsCount || 5}</strong>
+                        </span>
                     </div>
                 </div>
-                {isDoctorModal && <AddDoctorModal onClose={() => { setIsDoctorModal(false); getDoctorList() }} doctor={null} />}
 
+                <button
+                    type="button"
+                    onClick={addDoctor}
+                    className="self-start sm:self-auto bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                >
+                    <Plus size={16} /> Add Doctor
+                </button>
             </div>
 
-        </div>
+            {/* Filter Section */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-1">
+                {/* Search Bar */}
+                <div className="relative w-full md:max-w-xs">
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition shadow-xs"
+                    />
+                </div>
 
+                {/* Dropdowns */}
+                <div className="flex flex-wrap items-center gap-4">
+                    {/* Specialization Filter */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="specialization" className="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap">
+                            Specialization
+                        </label>
+                        <select
+                            id="specialization"
+                            value={specialization}
+                            onChange={(e) => setSpecialization(e.target.value)}
+                            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition shadow-xs cursor-pointer min-w-[170px]"
+                        >
+                            <option value="all">All Specialties</option>
+                            {Object.entries(Specialization).map(([key, value]) => (
+                                <option key={key} value={value}>{value}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="status" className="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap">
+                            Status
+                        </label>
+                        <select
+                            id="status"
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition shadow-xs cursor-pointer min-w-[120px]"
+                        >
+                            <option value="all">All</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">On Leave</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Doctors Grid */}
+            <div>
+                {doctorList && doctorList.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {doctorList.map((doctor) => (
+                            <DoctorCard
+                                key={doctor.doctorId || doctor._id}
+                                doctor={doctor}
+                                getDoctorList={getDoctorList}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-xs">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+                            <User size={24} />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900">No Doctors Found</h3>
+                        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                            No doctor profiles match the current filter or search criteria. Try resetting filters or adding a new doctor.
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {isDoctorModal && (
+                <AddDoctorModal
+                    onClose={() => { setIsDoctorModal(false); getDoctorList(); }}
+                    doctor={null}
+                />
+            )}
+        </div>
     )
 }
+
 export default Doctors

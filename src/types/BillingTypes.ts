@@ -58,14 +58,14 @@ export interface paymentRequest {
     amountPaid?: number;
     paymentMethod: string;
 }
-export enum PaymentStatus {
+export enum PaymentStatusFilter {
     all = "All Invoices",
     paid = "Paid",
     pending = "Pending",
     cancelled = "Cancelled"
 }
 export interface BillingSearch {
-    statusData: PaymentStatus | "";
+    statusData: string;
     search: string;
     date: string;
 }

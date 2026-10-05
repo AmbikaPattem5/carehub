@@ -3,7 +3,7 @@ import { useState } from "react"
 import { X, UserPlus } from "lucide-react"
 import api from '../services/api'
 import toast from "react-hot-toast"
-function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: CreatePatientRequest }) {
+function AddPatientModal({ onClose, patient = null }: { onClose: () => void, patient?: CreatePatientRequest | null }) {
     const formInitialValues: CreatePatientRequest = {
         firstName: patient?.firstName ?? "",
         lastName: patient?.lastName ?? "",
@@ -50,7 +50,7 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
         Active = "active",
         Inactive = "inactive"
     }
-    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
         const { name, value } = e.target
         setFormData({
             ...formData,
@@ -77,16 +77,16 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
         else if (!(/^[0-9]*$/.test(formData.phone) && formData.phone.length <= 10)) {
             errors.phone = "Phone is invalid"
         }
-        if (formData.email.trim() === '') {
+        if ((formData.email || '').trim() === '') {
             errors.email = "Email is required"
         }
-        if (formData.address.trim() === '') {
+        if ((formData.address || '').trim() === '') {
             errors.address = "Address is required"
         }
         if (formData.bloodGroup === '') {
             errors.bloodGroup = "Blood Group is required"
         }
-        if (formData.emergencyContact.trim() === '') {
+        if ((formData.emergencyContact || '').trim() === '') {
             errors.emergencyContact = "Emergency Contact is required"
         }
         else if (!(/^[0-9]*$/.test(formData.phone) && formData.phone.length <= 10)) {
@@ -104,6 +104,7 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
         }
         if (isEdit) {
             try {
+                if (!patient?._id) return;
                 const response = await api.patch(`/patients/${patient._id}`, formData)
                 if (response && response.data.success) {
                     console.log('updated data', response.data);
@@ -269,13 +270,13 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-semibold text-slate-700">Phone Number <span className="text-rose-500 font-bold">*</span></label>
                                     <input
-                                        type="number"
+                                        type="tel"
                                         name="phone"
                                         placeholder="+91 98450 12345"
                                         value={formData.phone}
                                         onChange={handleChange}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.phone ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
                                     />
                                     {errors.phone && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
@@ -332,14 +333,14 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
                                 <div className="space-y-1.5">
                                     <label className="block text-xs font-semibold text-slate-700">Emergency Contact <span className="text-rose-500 font-bold">*</span></label>
                                     <input
-                                        type="number"
+                                        type="tel"
                                         name="emergencyContact"
                                         placeholder="98450 98765 (Sister)"
                                         value={formData.emergencyContact}
                                         onChange={handleChange}
                                         disabled={isEdit}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.emergencyContact ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.emergencyContact ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
                                     />
                                     {errors.emergencyContact && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
@@ -351,15 +352,14 @@ function AddPatientModal({ onClose, patient }: { onClose: () => void, patient: C
 
                                 <div className="space-y-1.5 sm:col-span-2">
                                     <label className="block text-xs font-semibold text-slate-700">Residential Address <span className="text-rose-500 font-bold">*</span></label>
-                                    <input
-                                        type="text"
+                                    <textarea
                                         name="address"
                                         placeholder="Flat / House No, Street, Area, City"
                                         value={formData.address}
                                         onChange={handleChange}
                                         autoComplete="off"
                                         className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none ${errors.address ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
-                                    />
+                                    ></textarea>
                                     {errors.address && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
                                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500"></span>

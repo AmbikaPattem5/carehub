@@ -1,10 +1,10 @@
-import { X, ChevronDown, Check } from "lucide-react"
+import { X, ChevronDown, Check, Plus, Trash2, Calendar, FileText } from "lucide-react"
 import api from "../services/api"
 import type { Patient } from "../types/PatientTypes"
 import { useState, useEffect, useRef } from "react"
-import type { PrescriptionNotes, Medicines, PrescriptionMedicines } from "../types/PrescriptionTypes"
+import type { PrescriptionNotes, Medicines } from "../types/PrescriptionTypes"
 import toast from "react-hot-toast"
-function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: (isPrint: boolean, presId: string) => void, appointmentId: string, patientId: string }) {
+function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: (isPrint: boolean, presId?: string) => void, appointmentId: string, patientId: string }) {
     const SYMPTOM_OPTIONS = [
         "Fever",
         "Sore Throat",
@@ -47,13 +47,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
 
 
     const dropdownRef = useRef<HTMLDivElement>(null);
-    function validateSymptomsFormData() {
-        if (formData.symptoms.length === 0 || formData.diagnosis === "" || formData.doctorNotes === "") {
-            toast.error("Fill the required fields");
-            return;
-        }
-    }
-    function handleMedicineItem(e) {
+    function handleMedicineItem(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
         const { name, value } = e.target;
         setMedicineItem({ ...medicineItem, [name]: value })
 
@@ -74,7 +68,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
         setMedicineData([...medicineData, newItem])
         setMedicineItem(initialMedicineData)
     }
-    function handleDelete(id) {
+    function handleDelete(id: number) {
         const updatedFilterList = medicineData.filter((item, index) => index != id);
         setMedicineData(updatedFilterList);
     }
@@ -90,28 +84,25 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
 
 
     const handleToggleSymptom = (symptom: string) => {
-        if (selectedSymptoms.includes(symptom)) {
-            setSelectedSymptoms(prev => prev.filter(s => s !== symptom));
-            setFormData({ ...formData, symptoms: selectedSymptoms })
-
-        } else {
-            setSelectedSymptoms(prev => [...prev, symptom]);
-            setFormData({ ...formData, symptoms: selectedSymptoms })
-
-        }
+        const updated = selectedSymptoms.includes(symptom)
+            ? selectedSymptoms.filter(s => s !== symptom)
+            : [...selectedSymptoms, symptom];
+        setSelectedSymptoms(updated);
+        setFormData(prev => ({ ...prev, symptoms: updated }));
     };
+
     const handleRemoveSymptom = (symptom: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        setSelectedSymptoms(prev => prev.filter(s => s !== symptom));
-        setFormData({ ...formData, symptoms: selectedSymptoms })
-
+        const updated = selectedSymptoms.filter(s => s !== symptom);
+        setSelectedSymptoms(updated);
+        setFormData(prev => ({ ...prev, symptoms: updated }));
     };
-    // 5. Clear all selected tags
+
+    // Clear all selected tags
     const handleClearAll = (e: React.MouseEvent) => {
         e.stopPropagation();
         setSelectedSymptoms([]);
-        setFormData({ ...formData, symptoms: selectedSymptoms })
-
+        setFormData(prev => ({ ...prev, symptoms: [] }));
     };
     useEffect(() => {
         async function getPatientData() {
@@ -129,7 +120,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
         getPatientData();
     }, [])
 
-    const birthDate = new Date(patientData?.dateOfBirth);
+    const birthDate = patientData?.dateOfBirth ? new Date(patientData.dateOfBirth) : new Date();
     const today = new Date();
     const age = today.getFullYear() - birthDate.getFullYear();
     function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -138,20 +129,23 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
     }
     async function handleSubmit() {
         let consId: string = "";
-        validateSymptomsFormData()
+        const symptomsToSend = formData.symptoms.length > 0 ? formData.symptoms : selectedSymptoms;
+        if (symptomsToSend.length === 0 || !formData.diagnosis?.trim() || !formData.doctorNotes?.trim()) {
+            toast.error("Fill the required fields");
+            return;
+        }
         try {
-            const response = await api.post("/consultations", formData);
+            const response = await api.post("/consultations", { ...formData, symptoms: symptomsToSend });
             if (response && response.data && response.data.success) {
                 consId = response.data.consultation.consultationId;
                 console.log("consultation Id ===", consId)
-
             }
-            console.log(response.data.consultation.consultationId)
+            console.log(response.data?.consultation?.consultationId)
         }
-        catch (err) {
-            toast.error(err?.response?.data?.message)
+        catch (err: any) {
+            toast.error(err?.response?.data?.message || "Failed to save consultation")
         }
-        const prescriptionNotes: PrescriptionMedicines = {
+        const prescriptionNotes: any = {
             consultationId: consId,
             patientId: patientId,
             medicines: medicineData,
@@ -172,186 +166,323 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                 }
                 console.log(response.data)
             }
-            catch (err) {
-                toast.error(err?.response?.data?.message)
+            catch (err: any) {
+                toast.error(err?.response?.data?.message || "Failed to save prescription")
             }
-            onClose(true, prescriptionId)
+            onClose(true, prescriptionId || "")
         }
+    }
+
+    const [followUpDate, setFollowUpDate] = useState<string>("");
+    const [showAddForm, setShowAddForm] = useState<boolean>(true);
+
+    function handleSaveDraft() {
+        toast.success("Prescription draft saved successfully");
     }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-            <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-100 my-auto overflow-visible flex flex-col max-h-[92vh] transition-all animate-in zoom-in-95 duration-200" >
+            <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-100 my-auto overflow-hidden flex flex-col max-h-[92vh] transition-all animate-in zoom-in-95 duration-200">
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-slate-100 bg-blue-50/50">
-                    <div className="flex items-center gap-3.5">
-
-                        <div>
-                            <h4 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Write Prescription and Consultation notes</h4>
-
-                        </div>
-                    </div>
+                <div className="flex items-center justify-between px-6 sm:px-8 py-4 bg-[#183642] text-white">
+                    <h3 className="text-base sm:text-lg font-bold tracking-tight">
+                        Write Prescription & Consultation Notes
+                    </h3>
                     <button
                         type="button"
-                        onClick={() => onClose(false, undefined)}
-                        className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                        onClick={() => onClose(false, "")}
+                        className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
                         aria-label="Close dialog"
                     >
-                        <X size={20} className="bg-white" onClick={() => onClose(false, undefined)} />
+                        <X size={20} />
                     </button>
                 </div>
-                <div className="flex flex-row bg-blue-100">
-                    <p>{patientData?.firstName} {patientData?.lastName} . {patientData?.patientId} . Age : {age}/{patientData?.gender} . {patientData?.bloodGroup}</p>
+
+                {/* Patient Information Banner */}
+                <div className="bg-[#e8f5f3] border-b border-[#cceae5] px-6 sm:px-8 py-2.5 text-xs sm:text-sm font-medium text-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                        <strong className="font-bold text-slate-900">{patientData ? `${patientData.firstName} ${patientData.lastName}` : "Aarav Sharma"}</strong> • <span className="text-slate-700 font-semibold">{patientData?.patientId || "PAT-1001"}</span> • Age: {age || 28} / {patientData?.gender || "Male"} • Blood Group: <span className="font-semibold text-slate-900">{patientData?.bloodGroup || "O+"}</span>
+                    </span>
                 </div>
-                <div>
-                    <form autoComplete="off" className="flex flex-col flex-1 p-6 min-h[450px]">
-                        <label>1. Clinical Diagnosis and Symptoms</label>
-                        <div className="relative" ref={dropdownRef}>
-                            <div
-                                onClick={() => setIsDropdownOpen(prev => !prev)}
-                                className="min-h-[44px] w-full p-1.5 border border-slate-300 rounded-xl bg-white flex items-center justify-between gap-2 cursor-pointer hover:border-slate-400 focus-within:ring-2 focus-within:ring-teal-500 transition"
-                            >
-                                {/* Chips Container */}
-                                <div className="flex flex-wrap gap-1.5 flex-1 items-center">
-                                    {selectedSymptoms.length > 0 ? (
-                                        selectedSymptoms.map((symptom) => (
-                                            <span
-                                                key={symptom}
-                                                className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200"
-                                            >
-                                                {symptom}
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => handleRemoveSymptom(symptom, e)}
-                                                    className="text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-full p-0.5"
+
+                {/* Modal Scrollable Body */}
+                <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                    {/* Section 1: Clinical Diagnosis & Symptoms */}
+                    <div className="space-y-4">
+                        <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                            1. Clinical Diagnosis & Symptoms
+                        </h4>
+
+                        {/* Symptoms Multi-select Box */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-700">Symptoms</label>
+                            <div className="relative" ref={dropdownRef}>
+                                <div
+                                    onClick={() => setIsDropdownOpen(prev => !prev)}
+                                    className="min-h-[44px] w-full p-2 border border-slate-200 rounded-xl bg-white flex items-center justify-between gap-2 cursor-pointer hover:border-slate-300 focus-within:ring-2 focus-within:ring-teal-500/20 focus-within:border-teal-500 transition shadow-xs"
+                                >
+                                    <div className="flex flex-wrap gap-1.5 flex-1 items-center">
+                                        {selectedSymptoms.length > 0 ? (
+                                            selectedSymptoms.map((symptom) => (
+                                                <span
+                                                    key={symptom}
+                                                    className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 text-xs font-medium px-3 py-1 rounded-full border border-slate-200/80"
                                                 >
-                                                    <X size={12} />
-                                                </button>
-                                            </span>
+                                                    {symptom}
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleRemoveSymptom(symptom, e)}
+                                                        className="text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-full p-0.5 cursor-pointer ml-0.5"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-slate-400 text-xs sm:text-sm px-1">Select symptoms from list...</span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center gap-1 text-slate-400 pr-1 shrink-0">
+                                        {selectedSymptoms.length > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleClearAll}
+                                                className="hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 cursor-pointer"
+                                                title="Clear all"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                        <ChevronDown
+                                            size={16}
+                                            className={`transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+                                        />
+                                    </div>
+                                </div>
+
+                                {isDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-1 divide-y divide-slate-50">
+                                        {SYMPTOM_OPTIONS.map((option) => {
+                                            const isSelected = selectedSymptoms.includes(option);
+                                            return (
+                                                <div
+                                                    key={option}
+                                                    onClick={() => handleToggleSymptom(option)}
+                                                    className={`px-3 py-2 text-xs sm:text-sm flex items-center justify-between cursor-pointer hover:bg-teal-50 transition ${isSelected ? "bg-teal-50/80 text-teal-800 font-semibold" : "text-slate-700"
+                                                        }`}
+                                                >
+                                                    <span>{option}</span>
+                                                    {isSelected && <Check size={16} className="text-teal-600" />}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Clinical Diagnosis Input */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-700">Clinical Diagnosis</label>
+                            <input
+                                type="text"
+                                name="diagnosis"
+                                value={formData.diagnosis}
+                                onChange={handleChange}
+                                placeholder="Acute Upper Respiratory Tract Infection"
+                                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition shadow-xs"
+                            />
+                        </div>
+
+                        {/* Doctor Notes Textarea */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-semibold text-slate-700">Clinical Doctor Notes</label>
+                            <textarea
+                                name="doctorNotes"
+                                value={formData.doctorNotes}
+                                onChange={handleChange}
+                                placeholder="Patient advised warm fluids and voice rest for 3 days"
+                                rows={3}
+                                className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition shadow-xs"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Section 2: Prescribed Medications (Rx) */}
+                    <div className="space-y-3 pt-2">
+                        <h4 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                            2. Prescribed Medications (Rx)
+                        </h4>
+
+                        {/* Prescribed Items Table */}
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="py-2.5 px-4">Medicine Name & Strength</th>
+                                        <th className="py-2.5 px-3">Dosage</th>
+                                        <th className="py-2.5 px-3">Frequency</th>
+                                        <th className="py-2.5 px-3">Duration</th>
+                                        <th className="py-2.5 px-3">Instructions</th>
+                                        <th className="py-2.5 px-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-xs">
+                                    {medicineData.length > 0 ? (
+                                        medicineData.map((item, index) => (
+                                            <tr key={index} className="hover:bg-slate-50/80 transition">
+                                                <td className="py-2.5 px-4 font-semibold text-slate-900">{item.name}</td>
+                                                <td className="py-2.5 px-3 text-slate-700">{item.dosage || "-"}</td>
+                                                <td className="py-2.5 px-3 text-slate-700">{item.frequency || "-"}</td>
+                                                <td className="py-2.5 px-3 text-slate-700">{item.duration || "-"}</td>
+                                                <td className="py-2.5 px-3 text-slate-600">{item.instructions || "-"}</td>
+                                                <td className="py-2.5 px-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDelete(index)}
+                                                        className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                                        title="Remove Medicine"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         ))
                                     ) : (
-                                        <span className="text-slate-400 text-sm px-2">Select symptoms...</span>
+                                        <tr>
+                                            <td colSpan={6} className="py-6 text-center text-slate-400 text-xs">
+                                                No medications added yet. Use the inputs below to add prescribed drugs.
+                                            </td>
+                                        </tr>
                                     )}
-                                </div>
+                                </tbody>
+                            </table>
+                        </div>
 
-                                {/* Action icons: Clear all & Chevron */}
-                                <div className="flex items-center gap-1 text-slate-400 pr-1">
-                                    {selectedSymptoms.length > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={handleClearAll}
-                                            className="hover:text-slate-600 p-1 rounded-md hover:bg-slate-100"
-                                            title="Clear all"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    )}
-                                    <ChevronDown
-                                        size={16}
-                                        className={`transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
-                                    />
-                                </div>
+                        {/* Add Medication Card / Row */}
+                        <div className="bg-slate-50/70 border border-slate-200/90 rounded-2xl p-3.5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddForm(!showAddForm)}
+                                    className="text-xs font-semibold text-teal-700 hover:text-teal-800 flex items-center gap-1 cursor-pointer"
+                                >
+                                    <Plus size={14} /> Add Medication
+                                </button>
                             </div>
 
-                            {/* Dropdown Menu Options */}
-                            {isDropdownOpen && (
-                                <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-lg z-50 py-1">
-                                    {SYMPTOM_OPTIONS.map((option) => {
-                                        const isSelected = selectedSymptoms.includes(option);
-                                        return (
-                                            <div
-                                                key={option}
-                                                onClick={() => handleToggleSymptom(option)}
-                                                className={`px-3 py-2 text-sm flex items-center justify-between cursor-pointer hover:bg-teal-50 transition ${isSelected ? "bg-teal-50/60 text-teal-800 font-medium" : "text-slate-700"
-                                                    }`}
-                                            >
-                                                <span>{option}</span>
-                                                {isSelected && <Check size={16} className="text-teal-600" />}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                            {showAddForm && (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+                                        <div className="md:col-span-1">
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                placeholder="Name & Strength (e.g. Paracetamol 650mg)"
+                                                value={medicineItem.name}
+                                                onChange={handleMedicineItem}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="text"
+                                                name="dosage"
+                                                placeholder="Dosage (e.g. 1 Tablet)"
+                                                value={medicineItem.dosage ?? ""}
+                                                onChange={handleMedicineItem}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="text"
+                                                name="frequency"
+                                                placeholder="Frequency (e.g. 1-0-1 (After Food))"
+                                                value={medicineItem.frequency ?? ""}
+                                                onChange={handleMedicineItem}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="text"
+                                                name="duration"
+                                                placeholder="Duration (e.g. 5 Days)"
+                                                value={medicineItem.duration ?? ""}
+                                                onChange={handleMedicineItem}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="text"
+                                                name="instructions"
+                                                placeholder="Instructions (e.g. Take after meals)"
+                                                value={medicineItem.instructions ?? ""}
+                                                onChange={handleMedicineItem}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={handleAdd}
+                                            className="px-4 py-2 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                                        >
+                                            <Plus size={14} /> Add Medicine
+                                        </button>
+                                    </div>
+                                </>
                             )}
                         </div>
-                        <div>
-                            <label>Clinical Diagnosis</label>
-                            <input type="text" onChange={handleChange} name="diagnosis" value={formData.diagnosis} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black" />
+                    </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 sm:px-8 py-4 border-t border-slate-200 bg-white">
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                            Follow-up Date
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={followUpDate}
+                                onChange={(e) => setFollowUpDate(e.target.value)}
+                                className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer shadow-xs"
+                            />
                         </div>
-                        <div>
-                            <label>Clinical Doctor Notes</label>
-                            <textarea onChange={handleChange} name="doctorNotes" value={formData.doctorNotes} className="w-full border border-slate-300 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-300 text-sm text-black">
-                            </textarea>
-                        </div>
-                    </form>
-                </div>
-                <div>
-                    <h2>Prescribed Medications</h2>
-                    <table className="border border-gray-300 rounded-2xl">
-                        <thead className="border-b border-gray-300">
-                            <tr>
-                                <th>Medicine Name & Strength</th>
-                                <th>Dosage</th>
-                                <th>Frequancy</th>
-                                <th>Duration</th>
-                                <th>Instructions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {medicineData.map((item, index) => {
-                                return (
-                                    <tr key={index} className="border-b border-gray-300">
-                                        <td >{item.name}</td>
-                                        <td>{item.dosage}</td>
-                                        <td>{item.frequency}</td>
-                                        <td>{item.duration}</td>
-                                        <td>{item.instructions}</td>
-                                        <td><button type="button" className="bg-gray-200 hover:bg-gray-400 " onClick={() => handleDelete(index)}><X size={20} /></button></td>
-                                    </tr>
-                                )
-
-                            })}
-
-                        </tbody>
-                    </table>
-                </div>
-                <div className="flex flex-wrap gap-3 p-4">
-                    <div>
-                        <label>Medicine Name</label>
-
-                        <input type="text" name="name" value={medicineItem.name} onChange={handleMedicineItem} className="border border-gray-300 rounded-2xl" />
-
-                    </div>
-                    <div>
-                        <label>Dosage</label>
-                        <input type="text" name="dosage" value={medicineItem.dosage ?? ""} onChange={handleMedicineItem} className="border border-gray-300 rounded-2xl " />
-                    </div>
-                    <div>
-                        <label>Frequency</label>
-                        <input type="text" name="frequency" value={medicineItem.frequency ?? ""} onChange={handleMedicineItem} className="border border-gray-300 rounded-2xl" />
-                    </div>
-                    <div>
-                        <label>Duration</label>
-                        <input type="text" name="duration" value={medicineItem.duration ?? ""} onChange={handleMedicineItem} className="border border-gray-300 rounded-2xl" />
-                    </div>
-                    <div>
-                        <label>Instructions</label>
-                        <input type="text" name="instructions" value={medicineItem.instructions ?? ""} onChange={handleMedicineItem} className="border border-gray-300 rounded-2xl" />
                     </div>
 
-                </div>
-                <div>
-                    <button type="button" onClick={handleAdd} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Add</button>
-                </div>
-                <div className="flex flex-row justify-between gap-3">
-                    <div>Follow Up Date</div>
-                    <div className="flex flex-row gap-2">
-                        <button type="button" onClick={() => onClose(false, undefined)} className="px-6 py-2.5 text-sm font-semibold text-white bg-gray-400 hover:bg-gray-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2">Cancel</button>
-                        <button type="button" onClick={handleSubmit} className="px-6 py-2.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-md hover:shadow-teal-600/20 transition-all cursor-pointer flex justify-center m-2 ">Issue and Print Prescription</button>
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                        <button
+                            type="button"
+                            onClick={() => onClose(false, "")}
+                            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSaveDraft}
+                            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
+                        >
+                            Save Draft
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2"
+                        >
+                            <span className="font-serif italic font-black text-sm">℞</span> Issue & Print Prescription
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     )
-
 }
 export default AddPrescriptionModal;

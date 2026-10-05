@@ -1,7 +1,7 @@
 import axios from "axios";
 import useAuth from "../CustomHooks/useAuth";
 const api = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: "https://carehub-backend-jhn2.onrender.com/api",
     headers: {
         "Content-Type": "application/json"
     },
