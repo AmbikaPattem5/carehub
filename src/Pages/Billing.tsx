@@ -8,6 +8,7 @@ import { Search, Trash2, Loader2 } from "lucide-react"
 import type { BillingSearch } from "../types/BillingTypes"
 import AddDownloadReceiptModal from "../Components/AddDownloadReceiptModal"
 import DeleteConfirmModal from "../Components/DeleteConfirmModal"
+import useAuth from "../CustomHooks/useAuth";
 
 const PaymentFilterStatus = {
     all: "All",
@@ -22,6 +23,7 @@ function Billing() {
         search: "",
         date: ""
     }
+
     const [isBilling, setIsBilling] = useState<boolean>(false)
     const [isPayment, setIsPayment] = useState<boolean>(false)
     const [billingList, setBillingList] = useState<BillingData[]>([])
@@ -34,6 +36,8 @@ function Billing() {
     const [deleteInvoiceTarget, setDeleteInvoiceTarget] = useState<BillingData | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
+
+    const { role } = useAuth()
 
     function handleEdit(billing: BillingData) {
         setIsBilling(true);
@@ -116,7 +120,7 @@ function Billing() {
                             <p>Manage patients billing, generate invoices, and track payments</p>
                         </div>
                         <div className="space-y-1 flex items-end">
-                            <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 rounded cursor-pointer transition shadow-xs" onClick={() => { setEditBilling(null); setIsBilling(true); }}>+ Create Invoice</button>
+                            {(role == "admin" || role == "receptionist") && <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 rounded cursor-pointer transition shadow-xs" onClick={() => { setEditBilling(null); setIsBilling(true); }}>+ Create Invoice</button>}
                         </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -195,11 +199,10 @@ function Billing() {
                                                 <td className="text-center text-slate-700 max-w-xs truncate">{billItem.itemsSummary}</td>
                                                 <td className="text-center font-bold text-slate-900">₹{billItem.totalAmount?.toLocaleString('en-IN')}</td>
                                                 <td className="text-center">
-                                                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                                                        billItem.paymentStatus === "paid" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
+                                                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${billItem.paymentStatus === "paid" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
                                                         billItem.paymentStatus === "pending" || billItem.paymentStatus === "partially-paid" ? "bg-amber-100 text-amber-800 border border-amber-200" :
-                                                        "bg-rose-100 text-rose-800 border border-rose-200"
-                                                    }`}>
+                                                            "bg-rose-100 text-rose-800 border border-rose-200"
+                                                        }`}>
                                                         {billItem.paymentStatus}
                                                     </span>
                                                 </td>
@@ -208,18 +211,19 @@ function Billing() {
                                                         {billItem.paymentStatus === "pending" || billItem.paymentStatus === "partially-paid" ? (
                                                             <>
                                                                 <button onClick={() => handleEdit(billItem)} className="border border-slate-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-slate-100 cursor-pointer transition">Edit</button>
-                                                                <button onClick={() => handlePayment(billItem)} className="border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl px-2.5 py-1 text-xs font-semibold cursor-pointer transition">Collect Payment</button>
+                                                                {(role == "admin" || role == "receptionist") && <button onClick={() => handlePayment(billItem)} className="border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl px-2.5 py-1 text-xs font-semibold cursor-pointer transition">Collect Payment</button>}
                                                             </>
                                                         ) : (
                                                             <button onClick={() => handlePayment(billItem)} className="border border-slate-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-slate-100 cursor-pointer transition">Download Receipt</button>
                                                         )}
-                                                        <button
-                                                            onClick={() => setDeleteInvoiceTarget(billItem)}
-                                                            className="border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl p-1 cursor-pointer transition"
-                                                            title="Delete Invoice"
-                                                        >
-                                                            <Trash2 size={15} />
-                                                        </button>
+                                                        {role == "admin" &&
+                                                            <button
+                                                                onClick={() => setDeleteInvoiceTarget(billItem)}
+                                                                className="border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl p-1 cursor-pointer transition"
+                                                                title="Delete Invoice"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>}
                                                     </div>
                                                 </td>
                                             </tr>

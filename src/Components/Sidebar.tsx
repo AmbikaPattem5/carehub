@@ -3,7 +3,15 @@ import { Link, NavLink } from "react-router-dom"
 import { LayoutDashboard, Users, User, CalendarDays, Receipt } from 'lucide-react';
 import useAuth from '../CustomHooks/useAuth';
 function Sidebar() {
-    const { logout } = useAuth();
+    const { logout, role } = useAuth();
+    const navItems = [
+        { label: "Dashboard", to: "/", icon: LayoutDashboard, roles: ["admin", "doctor", "receptionist"] },
+        { label: "Patients", to: "/patients", icon: Users, roles: ["admin", "doctor", "receptionist"] },
+        { label: "Doctors", to: "/doctors", icon: User, roles: ["admin"] },
+        { label: "Appointments", to: "/appointments", icon: CalendarDays, roles: ["admin", "doctor", "receptionist"] },
+        { label: "Billing", to: "/billing", icon: Receipt, roles: ["admin", "receptionist"] },
+    ];
+
     return (
         <div className="hidden md:flex flex-col w-64 bg-slate-700 border-r border-gray-100 h-full">
             <div className="flex px-4 h-16 border-b border-gray-100 gap-3">
@@ -16,6 +24,22 @@ function Sidebar() {
             <div className="h-full">
                 <div className="flex flex-col justify-between space-y-2 p-4 h-full">
                     <div>
+                        {navItems
+                            .filter(item => item.roles.includes(role as any))
+                            .map(item => (
+                                <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) =>
+                                    `w-full flex items-center px-4 py-2.5 rounded-lg transition-colors ${isActive
+                                        ? "bg-teal-600 text-white font-medium"
+                                        : "text-gray-300 hover:bg-slate-600 hover:text-white"
+                                    }`
+                                }>
+                                    <item.icon className="h-5 w-5 mr-2" />
+                                    {item.label}
+                                </NavLink>
+                            ))
+                        }
+                    </div>
+                    {/* <div>
                         <NavLink to="/" end className={({ isActive }) =>
                             `w-full flex items-center px-4 py-2.5 rounded-lg transition-colors ${isActive ? "bg-teal-600 text-white font-medium" : "text-gray-300 hover:bg-slate-600 hover:text-white"
                             }`}>
@@ -46,7 +70,7 @@ function Sidebar() {
                             <Receipt className="h-5 w-5 mr-2" />
                             Billing
                         </NavLink>
-                    </div>
+                    </div> */}
                     <div className="px-4">
                         <button className="w-full flex items-center px-4 py-2.5 rounded-lg transition-colors bg-slate-600 text-white font-medium cursor-pointer" onClick={logout}>Logout</button>
                     </div>

@@ -9,7 +9,7 @@ import Appointments from "../Pages/Appointments";
 import Billing from "../Pages/Billing";
 import Dashboard from "../Pages/Dashboard";
 import useAuth from "../CustomHooks/useAuth";
-
+import ProtectedRoute from "../Components/ProtectedRoute"
 function AppRoutes() {
     const { token } = useAuth();
 
@@ -25,9 +25,16 @@ function AppRoutes() {
                 <Route index element={<Dashboard />} />
                 <Route path="dashboard" element={<Navigate to="/" replace />} />
                 <Route path="patients" element={<Patients />} />
-                <Route path="doctors" element={<Doctors />} />
-                <Route path="appointments" element={<Appointments />} />
-                <Route path="billing" element={<Billing />} />
+                <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                    <Route path="doctors" element={<Doctors />} />
+                </Route>
+                <Route element={<ProtectedRoute allowedRoles={["admin", "doctor", "receptionist"]} />}>
+                    <Route path="appointments" element={<Appointments />} />
+                </Route>
+                <Route element={<ProtectedRoute allowedRoles={["admin", "receptionist"]} />}>
+                    <Route path="billing" element={<Billing />} />
+                </Route>
+
             </Route>
 
             {/* Catch-all fallback */}
@@ -36,4 +43,4 @@ function AppRoutes() {
     );
 }
 
-export default AppRoutes;
+export default AppRoutes;

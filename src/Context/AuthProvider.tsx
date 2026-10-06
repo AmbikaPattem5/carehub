@@ -15,8 +15,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     function logout() {
         localStorage.removeItem("token")
         localStorage.removeItem("user")
+        localStorage.removeItem("role")
         setToken(null)
         setUser(null)
+        setRole(null);
     }
     return (
         <AuthContextData.Provider value={{ token, user, login, logout, role }}>

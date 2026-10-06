@@ -6,12 +6,15 @@ import DeleteConfirmModal from "../Components/DeleteConfirmModal"
 import { useState } from "react";
 import api from "../services/api"
 import toast from "react-hot-toast"
+import useAuth from "../CustomHooks/useAuth"
 
 function DoctorCard({ doctor, getDoctorList }: { doctor: Doctor, getDoctorList: () => void }) {
     const [editDoctor, setEditDoctor] = useState<Doctor | null>(null);
     const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+    const { role } = useAuth()
 
     function handleEditProfile() {
         setEditDoctor(doctor);
@@ -58,14 +61,14 @@ function DoctorCard({ doctor, getDoctorList }: { doctor: Doctor, getDoctorList: 
                             }`}>
                             {doctor.status || 'Active'}
                         </span>
-                        <button
+                        {role == "admin" && <button
                             type="button"
                             onClick={() => setIsDeleteModalOpen(true)}
                             title="Delete Doctor"
                             className="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
                         >
                             <Trash2 size={15} />
-                        </button>
+                        </button>}
                     </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
@@ -86,7 +89,7 @@ function DoctorCard({ doctor, getDoctorList }: { doctor: Doctor, getDoctorList: 
                         ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-xs'
                         }`}>Book Slot</button>
-                    <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-xl transition cursor-pointer" onClick={handleEditProfile}>Edit Profile</button>
+                    {role == "admin" && <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-xl transition cursor-pointer" onClick={handleEditProfile}>Edit Profile</button>}
                 </div>
 
             </div>

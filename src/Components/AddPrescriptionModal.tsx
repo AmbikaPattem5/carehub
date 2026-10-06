@@ -4,6 +4,7 @@ import type { Patient } from "../types/PatientTypes"
 import { useState, useEffect, useRef } from "react"
 import type { PrescriptionNotes, Medicines } from "../types/PrescriptionTypes"
 import toast from "react-hot-toast"
+import useAuth from "../CustomHooks/useAuth"
 function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: (isPrint: boolean, presId?: string) => void, appointmentId: string, patientId: string }) {
     const SYMPTOM_OPTIONS = [
         "Fever",
@@ -46,6 +47,7 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
     // const [consId, setConsId] = useState<string>("")
 
+    const { role } = useAuth()
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     function handleMedicineItem(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -470,26 +472,29 @@ function AddPrescriptionModal({ onClose, appointmentId, patientId }: { onClose: 
                         >
                             Cancel
                         </button>
-                        <button
-                            type="button"
-                            onClick={handleSaveDraft}
-                            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
-                        >
-                            Save Draft
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                            className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60"
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                                <span className="font-serif italic font-black text-sm">℞</span>
-                            )}
-                            {isSubmitting ? "Issuing..." : "Issue & Print Prescription"}
-                        </button>
+                        {role == "doctor" &&
+                            <button
+                                type="button"
+                                onClick={handleSaveDraft}
+                                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-xs"
+                            >
+                                Save Draft
+                            </button>
+                        }
+                        {(role == "doctor" || role == "admin") &&
+                            (<button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className="px-5 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 active:scale-98 rounded-xl shadow-xs hover:shadow-teal-600/20 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <span className="font-serif italic font-black text-sm">℞</span>
+                                )}
+                                {isSubmitting ? "Issuing..." : "Issue & Print Prescription"}
+                            </button>)}
                     </div>
                 </div>
             </div>

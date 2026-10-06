@@ -7,6 +7,8 @@ import toast from "react-hot-toast";
 import type { Doctor } from "../types/DoctorTypes";
 import { Status } from '../types/AppointmentTypes'
 import { X, Trash2, Loader2 } from "lucide-react"
+import useAuth from "../CustomHooks/useAuth";
+
 
 function Appointments() {
     const [isAppointmentModal, setIsAppointmentModal] = useState<boolean>(false)
@@ -22,6 +24,8 @@ function Appointments() {
     const [deleteAppointmentTarget, setDeleteAppointmentTarget] = useState<AppointmentResponse | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
+
+    const { role } = useAuth()
 
     useEffect(() => {
         getDoctors()
@@ -129,7 +133,9 @@ function Appointments() {
                         <p>Book, track and manage patient visits and consultation visits</p>
                     </div>
                     <div className="space-y-1 flex items-end">
-                        <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 rounded cursor-pointer transition shadow-xs" onClick={() => setIsAppointmentModal(true)}>Add Appointment</button>
+                        {(role == "admin" || role == "receptionist") && (
+                            <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 rounded cursor-pointer transition shadow-xs" onClick={() => setIsAppointmentModal(true)}>Add Appointment</button>
+                        )}
                         {isAppointmentModal && <AddAppointmentModal onClose={() => setIsAppointmentModal(false)} appointment={null} />}
                     </div>
                 </div>
@@ -176,7 +182,7 @@ function Appointments() {
                                 <th>Assigned Doctor</th>
                                 <th>Reason for Visit</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                {(role == "admin" || role == "receptionist") && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -192,31 +198,35 @@ function Appointments() {
                                             <td className="text-center text-slate-700 text-sm">{appointment.doctorName}</td>
                                             <td className="text-center text-slate-600 text-sm max-w-xs truncate">{appointment.reason}</td>
                                             <td className="text-center">
-                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                                                    appointment.status === "confirmed" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
+                                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${appointment.status === "confirmed" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" :
                                                     appointment.status === "checked-in" ? "bg-blue-100 text-blue-800 border border-blue-200" :
-                                                    appointment.status === "completed" ? "bg-slate-100 text-slate-800 border border-slate-200" :
-                                                    appointment.status === "cancelled" ? "bg-rose-100 text-rose-800 border border-rose-200" :
-                                                    "bg-amber-100 text-amber-800 border border-amber-200"
-                                                }`}>
+                                                        appointment.status === "completed" ? "bg-slate-100 text-slate-800 border border-slate-200" :
+                                                            appointment.status === "cancelled" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                                                                "bg-amber-100 text-amber-800 border border-amber-200"
+                                                    }`}>
                                                     {appointment.status}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div className="flex gap-1.5 justify-center items-center py-2">
                                                     {appointment.status !== 'checked-in' && appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
-                                                        <button className="border border-teal-200 bg-teal-50 text-teal-700 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-teal-100 cursor-pointer transition" onClick={() => handleCheckIn(appointment._id)}>Check In</button>
+                                                        (role == "admin" || role == "receptionist") && <button className="border border-teal-200 bg-teal-50 text-teal-700 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-teal-100 cursor-pointer transition" onClick={() => handleCheckIn(appointment._id)}>Check In</button>
                                                     )}
-                                                    <button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("reschedule") }}>Reschedule</button>
-                                                    <button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("edit") }}>Edit</button>
+                                                    {(role == "admin" || role == "receptionist") &&
+                                                        <button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("reschedule") }}>Reschedule</button>}
+                                                    {
+                                                        (role == "admin" || role == "receptionist") && (<button className="border border-gray-300 rounded-xl px-2 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => { setRescheduleAppointment(appointment); setReshedule("edit") }}>Edit</button>)}
                                                     {appointment.status !== 'cancelled' && (
+                                                        (role == "admin" || role == "receptionist") &&
                                                         <button className="border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-xl p-1 cursor-pointer transition" title="Cancel Appointment" onClick={() => handleCancelAppointment(appointment._id)}>
                                                             <X size={15} />
                                                         </button>
                                                     )}
-                                                    <button className="border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl p-1 cursor-pointer transition" title="Delete Appointment" onClick={() => setDeleteAppointmentTarget(appointment)}>
-                                                        <Trash2 size={15} />
-                                                    </button>
+                                                    {role == "admin" &&
+                                                        <button className="border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl p-1 cursor-pointer transition" title="Delete Appointment" onClick={() => setDeleteAppointmentTarget(appointment)}>
+                                                            <Trash2 size={15} />
+                                                        </button>
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>

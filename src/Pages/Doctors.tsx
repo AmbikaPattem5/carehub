@@ -6,6 +6,7 @@ import DoctorCard from "../Components/DoctorCard"
 import api from "../services/api"
 import toast from "react-hot-toast"
 import { Search, Plus, User, Loader2 } from "lucide-react"
+import useAuth from "../CustomHooks/useAuth"
 
 function Doctors() {
     const [isDoctorModal, setIsDoctorModal] = useState<boolean>(false)
@@ -14,6 +15,8 @@ function Doctors() {
     const [status, setStatus] = useState<string>("all")
     const [doctorList, setDoctorList] = useState<Doctor[]>([])
     const [loading, setLoading] = useState<boolean>(true)
+
+    const { role } = useAuth()
 
     function addDoctor() {
         setIsDoctorModal(true)
@@ -66,14 +69,14 @@ function Doctors() {
                         </span>
                     </div>
                 </div>
-
-                <button
-                    type="button"
-                    onClick={addDoctor}
-                    className="self-start sm:self-auto bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
-                >
-                    <Plus size={16} /> Add Doctor
-                </button>
+                {role == "admin" &&
+                    <button
+                        type="button"
+                        onClick={addDoctor}
+                        className="self-start sm:self-auto bg-teal-600 hover:bg-teal-700 active:scale-98 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                    >
+                        <Plus size={16} /> Add Doctor
+                    </button>}
             </div>
 
             {/* Filter Section */}
