@@ -16,7 +16,7 @@ function App() {
       <div>
         <GlobalProgressBar />
         <Toaster />
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>

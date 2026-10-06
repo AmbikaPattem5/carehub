@@ -9,8 +9,8 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
         email: doctor?.email ?? "",
         phone: doctor?.phone ?? "",
         specialization: doctor?.specialization ?? "",
-        experience: doctor?.experience || null,
-        consultationFee: doctor?.consultationFee || null,
+        experience: doctor?.experience ?? 0,
+        consultationFee: doctor?.consultationFee ?? 0,
         availableDays: doctor?.availableDays ?? [],
         availableHours: doctor?.availableHours ?? "",
         status: (doctor?.status as any) || Status.active
@@ -224,11 +224,11 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
                                         type="number"
                                         name="experience"
                                         placeholder="e.g. 5"
-                                        value={formData.experience}
+                                        value={formData.experience || ""}
                                         onChange={handleChange}
                                         disabled={isEdit}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" ${errors.experience ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${errors.experience ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
                                     />
                                     {errors.experience && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
@@ -243,10 +243,10 @@ function AddDoctorModal({ onClose, doctor }: { onClose: () => void, doctor?: Doc
                                     <input
                                         type="number"
                                         name="consultationFee"
-                                        value={formData.consultationFee}
+                                        value={formData.consultationFee || ""}
                                         onChange={handleChange}
                                         autoComplete="off"
-                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"${errors.consultationFee ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
+                                        className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${errors.consultationFee ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20' : 'border-slate-200 hover:border-slate-300 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15'}`}
                                     />
                                     {errors.consultationFee && (
                                         <span className="text-xs text-rose-500 font-medium flex items-center gap-1 mt-1">
