@@ -6,6 +6,7 @@ import DeleteConfirmModal from "../Components/DeleteConfirmModal"
 import toast from "react-hot-toast"
 import { Trash2, Search, ChevronDown, Loader2 } from "lucide-react"
 import type { Patient } from "../types/PatientTypes"
+import useAuth from "../CustomHooks/useAuth"
 
 function Patients() {
     const [showAddModal, setShowAddModal] = useState<boolean>(false)
@@ -21,6 +22,8 @@ function Patients() {
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
     const [loading, setLoading] = useState<boolean>(true)
     const today = new Date();
+
+    const { role } = useAuth();
 
     function viewHistory(id: string) {
         setIsViewHistoryOpen(true);
@@ -74,7 +77,7 @@ function Patients() {
                     <p>Manage clinic patients records and medical histories</p>
                 </div>
                 <div className="space-y-1 flex items-end">
-                    <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 cursor-pointer transition shadow-xs" onClick={() => setShowAddModal(true)}>Add Patient</button>
+                    {(role == "admin" || role == "receptionist") && <button className="bg-emerald-500 hover:bg-emerald-600 border rounded-xl text-white font-bold py-2 px-4 cursor-pointer transition shadow-xs" onClick={() => setShowAddModal(true)}>Add Patient</button>}
                     {showAddModal && <AddPatientModal patient={null} onClose={() => { setShowAddModal(false); getPatientList(); }} />}
                 </div>
             </div>
@@ -139,33 +142,30 @@ function Patients() {
                     <button
                         type="button"
                         onClick={() => setStatus("all")}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                            status === "all"
-                                ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
-                                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                        }`}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${status === "all"
+                            ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
+                            : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                            }`}
                     >
                         All
                     </button>
                     <button
                         type="button"
                         onClick={() => setStatus("active")}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                            status === "active"
-                                ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
-                                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                        }`}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${status === "active"
+                            ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
+                            : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                            }`}
                     >
                         Active
                     </button>
                     <button
                         type="button"
                         onClick={() => setStatus("inactive")}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
-                            status === "inactive"
-                                ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
-                                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                        }`}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${status === "inactive"
+                            ? "bg-teal-100/90 text-teal-800 border border-teal-200/80 shadow-xs"
+                            : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                            }`}
                     >
                         Inactive
                     </button>
@@ -203,11 +203,12 @@ function Patients() {
                                         </td>
                                         <td>
                                             <div className="flex gap-2 justify-center items-center py-2">
-                                                <button className="border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => viewHistory(patient.patientId)}>View History</button>
-                                                <button className="border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => setEditPatient(patient)}>Edit</button>
-                                                <button className="border border-rose-200 text-rose-600 rounded-xl p-1.5 hover:bg-rose-50 cursor-pointer transition" title="Delete Patient" onClick={() => setDeletePatientTarget(patient)}>
+                                                {(role == "admin" || role == "doctor") && <button className="border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => viewHistory(patient.patientId)}>View History</button>}
+                                                {(role == "admin" || role == "receptionist") && <button className="border border-gray-300 rounded-xl px-2.5 py-1 text-xs font-medium hover:bg-gray-100 cursor-pointer transition" onClick={() => setEditPatient(patient)}>Edit</button>}
+                                                {role == "admin" && <button className="border border-rose-200 text-rose-600 rounded-xl p-1.5 hover:bg-rose-50 cursor-pointer transition" title="Delete Patient" onClick={() => setDeletePatientTarget(patient)}>
                                                     <Trash2 size={15} />
                                                 </button>
+                                                }
                                             </div>
                                         </td>
                                     </tr>
